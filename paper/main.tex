@@ -1,0 +1,90 @@
+\documentclass[journal]{IEEEtran}
+
+\usepackage{cite}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{url}
+
+\title{Beyond Binary Compliance: An Explainable Multidimensional Device Trust Framework for Enterprise Access Decisions}
+
+\author{Taqui Mohammad}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Enterprise access-control systems increasingly operate in environments where device
+state, identity assurance, endpoint security, telemetry freshness, and threat signals
+can change independently. Binary compliance provides a useful administrative signal
+but may be insufficient as a standalone representation of device trust. This work
+investigates an explainable multidimensional device-trust model that combines
+normalized endpoint, identity, security, and risk signals with explicit safety gates.
+We compare the model with a binary compliance baseline using reproducible synthetic
+endpoint scenarios, including benign, degraded, stale, identity-risk, compromised,
+and adversarially compliant cases. The study is designed to evaluate false-allow
+rates, false-deny rates, sensitivity to weights and thresholds, missing telemetry,
+adversarial behavior, explainability, and computational scalability. This manuscript
+is a work in progress; results reported in the repository are synthetic and do not
+represent production effectiveness.
+\end{abstract}
+
+\begin{IEEEkeywords}
+zero trust, device trust, endpoint security, access control, risk-adaptive access
+control, endpoint management, explainable security
+\end{IEEEkeywords}
+
+\section{Introduction}
+Zero Trust Architecture rejects implicit trust based on network location and calls
+for explicit authentication and authorization of subjects and devices
+\cite{nist800207}. Prior work has explored trust computation, risk-adaptive access
+control, and continuous verification across several domains
+\cite{syed2022zta,bhattarai2024ami,albomi2024service}. Recent systematic reviews
+continue to identify challenges in standardization, scalability, validation, and
+explainability of trust-scoring methods \cite{ruambo2026tsa}.
+
+This paper focuses on a narrower enterprise-endpoint question: whether an explainable
+multi-signal trust model can improve access decisions relative to binary compliance
+under controlled and reproducible endpoint scenarios.
+
+\section{Related Work}
+\subsection{Zero Trust and Device-Aware Policy}
+\subsection{Trust Scoring and Risk-Adaptive Access Control}
+\subsection{Continuous Authentication and Continuous Verification}
+\subsection{Research Gaps}
+
+\section{Research Questions}
+\begin{itemize}
+    \item RQ1: Does multidimensional trust reduce false allows compared with binary compliance?
+    \item RQ2: How sensitive are decisions to weights, thresholds, and missing signals?
+    \item RQ3: Can the model remain explainable and computationally practical at enterprise scale?
+\end{itemize}
+
+\section{Model}
+The initial model combines normalized positive signals and inverted risk signals using
+a transparent weighted sum. Severe threat risk and critically low security coverage
+act as non-compensatory safety gates. Model parameters are treated as experimental
+hypotheses and are varied in sensitivity studies.
+
+\section{Experimental Methodology}
+\subsection{Synthetic Scenario Generator}
+\subsection{Binary Compliance Baseline}
+\subsection{Adversarially Compliant Endpoints}
+\subsection{Metrics}
+\subsection{Sensitivity and Scale Tests}
+
+\section{Results}
+Results will be added only after reproducible experiment runs are reviewed.
+
+\section{Threats to Validity}
+Synthetic data cannot establish real-world security effectiveness. Construct validity,
+distribution assumptions, threshold subjectivity, and domain transfer are explicit
+limitations.
+
+\section{Discussion}
+
+\section{Conclusion}
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}
