@@ -1,0 +1,8 @@
+scenario,safe_for_ordinary_access,compliance,endpoint_health,identity_assurance,patch_posture,security_coverage,freshness,threat_risk,anomaly_risk
+healthy,1,0.98,0.95,0.96,0.94,0.99,0.96,0.03,0.04
+policy_drift,1,0.2,0.88,0.95,0.82,0.96,0.94,0.04,0.06
+stale,0,0.91,0.68,0.82,0.48,0.78,0.16,0.27,0.22
+identity_risk,0,0.97,0.94,0.2,0.93,0.98,0.92,0.18,0.8
+malware,0,0.93,0.28,0.91,0.74,0.88,0.93,0.96,0.89
+protection_missing,0,0.86,0.61,0.94,0.75,0.08,0.88,0.33,0.4
+adversarial_compliant,0,0.99,0.6,0.52,0.94,0.95,0.94,0.76,0.88
