@@ -1,0 +1,7 @@
+Year,Source,Domain,Contribution,Trust/Context Signals,Evaluation,Gap Relevant to This Study,DOI/URL
+2020,NIST SP 800-207,Enterprise / architecture,Zero Trust reference architecture,"Identity, device, endpoint security, analytics, policy",Reference architecture,Does not prescribe one standardized enterprise endpoint trust algorithm,10.6028/NIST.SP.800-207
+2022,"Syed et al., IEEE Access",Survey / critical infrastructure,Comprehensive Zero Trust survey,"Authentication, access control, trust/risk, automation",Survey,Identifies trust/risk computation as an active challenge,10.1109/ACCESS.2022.3174679
+2024,"Bhattarai et al., NAECON",Smart grid / AMI,Trust-score-based ZTA,Multiple user/device/network attributes,Case study,Domain-specific; motivates multi-attribute scoring,10.1109/NAECON61878.2024.10670642
+2024,"Albomi et al., IEEE ICMI",Service mesh,Risk-adaptive access control,Runtime trust and service risk,Demonstration,Service-to-service rather than enterprise endpoint focus,10.1109/ICMI60790.2024.10585800
+2026,"Ruambo et al., Computers & Electrical Engineering",Systematic review,Trust-scoring algorithm review,"Context, device posture, behavior, threat intelligence",33-study SLR,"Reports fragmentation, weak standardization, scale/validation/adversarial gaps",10.1016/j.compeleceng.2026.111002
+2019,"González-Manzano et al., ACM Computing Surveys",Continuous authentication / IoT,Survey of continuous authentication,Behavioral and device-related signals,58-paper survey,Supports continuous confidence beyond one-time authentication,10.1145/3314023
