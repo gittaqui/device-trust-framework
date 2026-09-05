@@ -42,3 +42,36 @@ Next:
 3. Join red-team labels to authentication-derived features without leakage.
 4. Implement explicit missing-signal confidence penalties.
 5. Expand the literature review around dynamic trust scoring published in 2025-2026 and differentiate the proposed contribution from recent context-aware device-trust models.
+
+## Day 3 — 2026-09-04 — Missing-telemetry robustness
+
+Completed:
+- Reviewed current repository state before modifying the experiment design.
+- Verified two additional peer-reviewed references relevant to runtime/continuous trust: Dimitrakos et al., IEEE TrustCom 2020, DOI `10.1109/TRUSTCOM50675.2020.00247`, and Jha et al., IEEE Transactions on Cloud Computing, vol. 13(1), pp. 61–74, DOI `10.1109/TCC.2024.3503358`.
+- Added `src/evaluate_missing_telemetry.py`, a deterministic synthetic experiment comparing five explicit missing-evidence policies: renormalization, neutral imputation, pessimistic imputation, confidence penalty, and policy abstention via `STEP_UP`.
+- Added MCAR and critical-signal-biased structured outage models at 10%, 25%, and 40% nominal missingness.
+- Added unit tests covering missing critical signals, low observed-weight coverage, hard-gate preservation, and conservative score ordering.
+- Recorded full reproducible results in `results/missing-telemetry-results.md`.
+- Expanded the literature review, matrix, and BibTeX database around continuous authorization, runtime state verification, missing evidence, and scalability.
+
+Key synthetic findings:
+- Renormalizing only the observed factors increased false allows as telemetry disappeared: under structured missingness, false allows rose from 15.40% at 10% nominal missingness to 26.47% at 40%.
+- Pessimistic/confidence penalties sharply reduced false allows but created severe false-denial/friction costs at high missingness; at structured 40% missingness, false-denial rates exceeded 61%.
+- Explicit `STEP_UP` behaved as a useful abstention mechanism in this synthetic design: structured false allows fell to 0.90% at 40% nominal missingness with zero synthetic false denials, but 96.41% of safe sessions required step-up.
+
+Interpretation:
+- Missing telemetry must not be silently treated as benign evidence.
+- The current results do not establish an optimal strategy because both the population and missingness distributions are synthetic.
+- The high step-up rate demonstrates a security/usability trade-off that must be calibrated against external telemetry rather than optimized on the current generator.
+
+Limitations:
+- Missingness models are hypothetical and not estimated from production telemetry.
+- `STEP_UP` is modeled as an abstention/verification outcome, not as a measured MFA or access-control user experience.
+- The same synthetic scenario generator supplies the underlying safe/unsafe labels, so results are methodological rather than evidence of production effectiveness.
+- No external LANL telemetry has yet been processed.
+
+Next:
+1. Validate the missing-evidence policy on a bounded LANL authentication sample where several endpoint dimensions are genuinely unavailable.
+2. Add threshold and minimum-coverage sensitivity analysis to determine whether the step-up trade-off is stable.
+3. Add per-scenario error analysis, especially for adversarially compliant and identity-risk cases.
+4. Expand the literature search around abstention/selective prediction and risk-aware access decisions without overstating domain equivalence.
