@@ -75,3 +75,40 @@ Next:
 2. Add threshold and minimum-coverage sensitivity analysis to determine whether the step-up trade-off is stable.
 3. Add per-scenario error analysis, especially for adversarially compliant and identity-risk cases.
 4. Expand the literature search around abstention/selective prediction and risk-aware access decisions without overstating domain equivalence.
+
+## Day 4 — 2026-09-05 — Threshold sensitivity and per-scenario errors
+
+Completed:
+- Inspected the current model, generator, missing-telemetry experiment, literature review, bibliography, and research log before adding new work.
+- Added `src/evaluate_threshold_sensitivity.py` to sweep the `ALLOW` threshold from 0.60 through 0.90 and emit aggregate plus per-scenario decision metrics.
+- Added `tests/test_threshold_sensitivity.py` covering monotonic false-allow behavior under a higher allow threshold and per-scenario decision-rate accounting.
+- Reproduced the 50,000-row seeded synthetic threshold sweep and recorded the results in `results/threshold-sensitivity-results.md`.
+- Added `research/threshold-selection-literature.md` to distinguish methodological necessity from research novelty.
+- Verified and added two directly relevant references: Bradatsch et al., IEEE TrustCom 2023, DOI `10.1109/TrustCom60117.2023.00194`, and Jeong & Yang, Applied Sciences 2025, DOI `10.3390/app15179551`.
+- Updated the manuscript BibTeX database with the verified publication metadata.
+
+Key synthetic findings:
+- The model is strongly threshold-sensitive. At `ALLOW >= 0.75`, the false-allow rate is 12.50%; at 0.80 it falls to 0.34%; at 0.83 it reaches 0% on this synthetic population.
+- The security gain has an operational cost. Safe `STEP_UP` rises from 5.40% at threshold 0.75 to 13.58% at 0.80 and approximately 14.18% at 0.83.
+- Aggregate metrics conceal a concentrated weakness: at threshold 0.75, 58.3% of the synthetic `identity_risk` scenario is still allowed, while 7.4% of `adversarial_compliant` and 2.8% of `stale` scenarios are allowed.
+- At threshold 0.80, `identity_risk` false allows fall to 1.8% and the other listed unsafe scenario families fall to 0%, but 95.7% of benign `policy_drift` cases require `STEP_UP`.
+- The current malware and missing-protection scenarios remain denied because of existing non-compensatory safety gates.
+
+Interpretation:
+- The original 0.75 threshold cannot be defended as a universal operating point from the current evidence.
+- Choosing 0.83 because it eliminates false allows on the same synthetic generator would be in-sample tuning, not external validation.
+- Identity risk exposes a compensation problem in the additive model: favorable endpoint signals can offset weak identity assurance and high anomaly risk. This is a stronger design question than simply tuning the global threshold.
+- Prior research already covers dynamic risk-based thresholds, weighted trust-score sensitivity, and large-scale throughput evaluation. Threshold sensitivity is therefore necessary methodology, not the manuscript's novelty claim.
+
+Limitations:
+- The population, scenario labels, and signal distributions are synthetic and project-designed.
+- The experiment varies the allow threshold while keeping the step-up threshold and weights fixed.
+- `STEP_UP` cost is represented as a rate, not measured user or administrator burden.
+- Unit tests were added to the repository; external CI execution should be added so every research commit is independently reproducible from GitHub.
+- No external enterprise telemetry has yet been used to calibrate or test a threshold.
+
+Next:
+1. Add a dynamic/risk-dependent threshold baseline based on clearly specified resource sensitivity, without claiming the concept as novel.
+2. Test a non-compensatory identity-risk constraint separately from global threshold changes and quantify its security/friction trade-off.
+3. Add joint weight-and-threshold sensitivity rather than one-dimensional tuning.
+4. Prioritize a bounded LANL experiment so threshold behavior can be evaluated on independently sourced enterprise telemetry.
