@@ -112,3 +112,39 @@ Next:
 2. Test a non-compensatory identity-risk constraint separately from global threshold changes and quantify its security/friction trade-off.
 3. Add joint weight-and-threshold sensitivity rather than one-dimensional tuning.
 4. Prioritize a bounded LANL experiment so threshold behavior can be evaluated on independently sourced enterprise telemetry.
+
+## Day 5 — 2026-09-06 — Identity non-compensation diagnostic
+
+Completed:
+- Inspected the existing research log, trust model, generator, and bibliography before modifying the project.
+- Used fresh literature research to verify that NIST SP 800-207 treats identity, requesting-system state, and behavioral attributes as distinct policy inputs rather than requiring one compensatory score.
+- Verified Ameer et al., ACM Transactions on Privacy and Security 27(3), 2024, DOI `10.1145/3671147`, which combines contextual authorization policy with dynamic Zero Trust score/threshold evaluation. Added it to the bibliography to prevent an inflated novelty claim.
+- Added `src/evaluate_identity_noncompensation.py` to compare the additive 0.75 model, a stricter additive 0.80 model, and an experimental targeted `STEP_UP` guard.
+- Added a 21x21 identity-assurance/anomaly-risk policy-surface diagnostic while holding other endpoint evidence at the midpoint of the synthetic healthy ranges.
+- Added `tests/test_identity_noncompensation.py`, including a regression case where `identity_assurance=0.20` and `anomaly_risk=0.90` are still `ALLOW` under the current additive 0.75 model when other endpoint signals are healthy.
+- Recorded the complete synthetic interpretation and limitations in `results/identity-noncompensation-results.md` and `research/noncompensatory-policy-literature.md`.
+
+Key synthetic findings:
+- On the 50,000-row seeded population, false allows are 12.50% for additive 0.75, 0.34% for additive 0.80, and 1.24% for guarded 0.75.
+- Safe STEP_UP is 5.40% for additive 0.75 and guarded 0.75, versus 13.58% for additive 0.80.
+- The guarded policy eliminates `ALLOW` for the current synthetic `identity_risk` scenario while preserving the original treatment of benign `policy_drift`; additive 0.80 is stricter but pushes approximately 95.7% of `policy_drift` into STEP_UP.
+- On the isolated 441-point identity/anomaly policy surface, additive 0.75 allows 94.56% of points, additive 0.80 allows 68.71%, and guarded 0.75 allows 47.17%.
+
+Interpretation:
+- Cross-domain compensation is a measurable property of the current additive model and can produce counterintuitive authorization decisions even when identity assurance is extremely weak.
+- The particular identity guard thresholds are exploratory and must not be presented as optimal.
+- The apparent absence of additional safe-user friction under the guard is structurally caused by the current generator: safe scenarios never enter the guard region. This prevents a fair estimate of false challenges and is now an explicit validity limitation.
+- Score-plus-policy separation is not itself novel; prior ACM work already combines formal authorization policy with dynamic scores. The stronger contribution must be endpoint-specific empirical analysis, uncertainty/abstention behavior, missing telemetry, and independent validation.
+
+Limitations:
+- All labels and signal distributions remain synthetic.
+- Guard thresholds are in-sample and uncalibrated.
+- Safe identity uncertainty is underrepresented by design.
+- No real MFA burden, user abandonment, or help-desk friction is measured.
+- No external enterprise telemetry has yet been processed.
+
+Next:
+1. Stop tuning guard thresholds on the synthetic generator.
+2. Run a bounded LANL authentication experiment to obtain independently sourced identity/behavior distributions.
+3. Introduce a controlled benign-uncertainty lab experiment (e.g., legitimate authentication novelty or stale identity context) so guard-induced challenge burden can be measured rather than assumed.
+4. Add a resource-sensitivity/dynamic-threshold baseline only after the external identity distribution is available.
