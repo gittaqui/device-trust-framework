@@ -21,11 +21,12 @@ investigates an explainable multidimensional device-trust model that combines
 normalized endpoint, identity, security, and risk signals with explicit safety gates.
 We compare the model with a binary compliance baseline using reproducible synthetic
 endpoint scenarios, including benign, degraded, stale, identity-risk, compromised,
-and adversarially compliant cases. The study is designed to evaluate false-allow
-rates, false-deny rates, sensitivity to weights and thresholds, missing telemetry,
-adversarial behavior, explainability, and computational scalability. This manuscript
-is a work in progress; results reported in the repository are synthetic and do not
-represent production effectiveness.
+and adversarially compliant cases. The study evaluates false-allow rates, false-deny
+and step-up behavior, sensitivity to weights and thresholds, missing telemetry,
+adversarial behavior, explainability, and computational scalability. Synthetic
+experiments are used for controlled failure analysis and are explicitly separated from
+planned external-telemetry validation. This manuscript is a work in progress; the
+current synthetic results do not establish production effectiveness.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -44,7 +45,8 @@ explainability of trust-scoring methods \cite{ruambo2026tsa}.
 
 This paper focuses on a narrower enterprise-endpoint question: whether an explainable
 multi-signal trust model can improve access decisions relative to binary compliance
-under controlled and reproducible endpoint scenarios.
+under controlled and reproducible endpoint scenarios, while making uncertainty and
+non-compensatory safety constraints explicit.
 
 \section{Related Work}
 \subsection{Zero Trust and Device-Aware Policy}
@@ -55,7 +57,7 @@ under controlled and reproducible endpoint scenarios.
 \section{Research Questions}
 \begin{itemize}
     \item RQ1: Does multidimensional trust reduce false allows compared with binary compliance?
-    \item RQ2: How sensitive are decisions to weights, thresholds, and missing signals?
+    \item RQ2: How sensitive are decisions to weights, thresholds, missing signals, and non-compensatory safety constraints?
     \item RQ3: Can the model remain explainable and computationally practical at enterprise scale?
 \end{itemize}
 
@@ -63,22 +65,86 @@ under controlled and reproducible endpoint scenarios.
 The initial model combines normalized positive signals and inverted risk signals using
 a transparent weighted sum. Severe threat risk and critically low security coverage
 act as non-compensatory safety gates. Model parameters are treated as experimental
-hypotheses and are varied in sensitivity studies.
+hypotheses and are varied in sensitivity studies. A separate experimental identity
+and behavior guard converts otherwise allowed decisions to a step-up state when
+identity assurance is very weak or anomaly risk is high; this guard is evaluated as a
+hypothesis rather than presented as a validated production threshold.
 
 \section{Experimental Methodology}
 \subsection{Synthetic Scenario Generator}
-\subsection{Binary Compliance Baseline}
-\subsection{Adversarially Compliant Endpoints}
-\subsection{Metrics}
-\subsection{Sensitivity and Scale Tests}
+The controlled generator produces safe and unsafe endpoint-session scenarios including
+healthy, policy-drift, stale, identity-risk, malware, protection-missing,
+mixed-degradation, and adversarially compliant cases. Scenario prevalence and feature
+ranges are explicit repository parameters. Synthetic labels support controlled failure
+analysis but cannot establish external validity.
 
-\section{Results}
-Results will be added only after reproducible experiment runs are reviewed.
+\subsection{Policy Baselines}
+We compare binary compliance, the weighted multidimensional model at multiple allow
+thresholds, and the experimental identity/behavior guard. All policies are evaluated
+on identical generated rows so comparisons are paired.
+
+\subsection{Adversarially Compliant Endpoints}
+The adversarially compliant scenario deliberately preserves a high compliance signal
+while degrading other trust dimensions. It is intended to test compensation failure
+modes, not to estimate the prevalence of such states in production environments.
+
+\subsection{Metrics and Statistical Analysis}
+Primary operational metrics include the false-allow rate among sessions labeled unsafe
+for ordinary access and the step-up rate among sessions labeled safe. We report 95\%
+Wilson score intervals for binomial rates. For paired row-level ordinary-access
+correctness, we use continuity-corrected McNemar comparisons because each policy is
+applied to the same fixed evaluation instances. Dietterich identified McNemar's test as
+an appropriate low-Type-I-error comparison for paired classifier outputs on a single
+test set \cite{dietterich1998statistical}. Statistical significance is treated as
+secondary to effect size and security/friction trade-offs. These analyses are
+exploratory because model development used the same synthetic design; they are not
+presented as preregistered confirmatory evidence.
+
+\subsection{Sensitivity and Scale Tests}
+Threshold, weight, missing-telemetry, and non-compensation studies are evaluated
+separately so that changes in security outcomes can be distinguished from changes in
+user friction and abstention behavior.
+
+\section{Preliminary Synthetic Results}
+Table~\ref{tab:synthetic-policy} reports the seeded 50,000-row synthetic policy
+comparison. These values characterize behavior under the generator assumptions only.
+They must not be interpreted as production false-allow rates.
+
+\begin{table}[ht]
+\centering
+\caption{Synthetic policy comparison (50,000 rows, seed 20260903).}
+\label{tab:synthetic-policy}
+\begin{tabular}{lccc}
+\toprule
+Policy & False ALLOW & Safe STEP\_UP & Accuracy \\
+\midrule
+Binary compliance & 93.74\% & 0.00\% & 52.45\% \\
+Additive 0.75 & 12.50\% & 5.40\% & 91.62\% \\
+Additive 0.80 & 0.34\% & 13.58\% & 91.97\% \\
+Guarded 0.75 & 1.24\% & 5.40\% & 96.34\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The threshold increase from 0.75 to 0.80 substantially reduces synthetic false allows
+but also increases safe step-up decisions. The guarded policy changes a different
+region of the decision surface: under the present generator it reduces false allows
+without increasing safe step-up relative to the 0.75 additive model. This apparent
+friction advantage is not yet externally validated and is partly attributable to the
+limited overlap between benign synthetic identity behavior and the guard region.
+Accordingly, no production policy recommendation is made from these results.
 
 \section{Threats to Validity}
 Synthetic data cannot establish real-world security effectiveness. Construct validity,
-distribution assumptions, threshold subjectivity, and domain transfer are explicit
-limitations.
+distribution assumptions, scenario prevalence, threshold subjectivity, and domain
+transfer are explicit limitations. The synthetic generator also informed iterative
+policy development, creating design-overfitting risk. Confidence intervals quantify
+sampling variability conditional on the generator rather than uncertainty about the
+real enterprise population. The ordinary-access accuracy metric treats both STEP\_UP
+and DENY as blocked access and therefore must be interpreted alongside separate
+friction and false-allow metrics. External telemetry must be evaluated on temporally
+held-out data with frozen proxy definitions and policy settings before stronger claims
+are considered.
 
 \section{Discussion}
 
