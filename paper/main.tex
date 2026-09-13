@@ -80,8 +80,14 @@ analysis but cannot establish external validity.
 
 \subsection{Policy Baselines}
 We compare binary compliance, the weighted multidimensional model at multiple allow
-thresholds, and the experimental identity/behavior guard. All policies are evaluated
-on identical generated rows so comparisons are paired.
+thresholds, and the experimental identity/behavior guard. We additionally evaluate a
+literature-inspired attribute-quorum comparator: an ordinary ALLOW requires both the
+aggregate 0.75 trust threshold and a minimum number of individual safety-oriented
+factors to exceed a uniform factor threshold. This follows the general decision
+structure of prior trust-score ZTA work that combines aggregate and per-attribute
+threshold requirements \cite{bhattarai2024ami}; it is not a reproduction of that
+paper's domain-specific implementation. All policies are evaluated on identical
+generated rows so comparisons are paired.
 
 \subsection{Adversarially Compliant Endpoints}
 The adversarially compliant scenario deliberately preserves a high compliance signal
@@ -101,9 +107,9 @@ exploratory because model development used the same synthetic design; they are n
 presented as preregistered confirmatory evidence.
 
 \subsection{Sensitivity and Scale Tests}
-Threshold, weight, missing-telemetry, and non-compensation studies are evaluated
-separately so that changes in security outcomes can be distinguished from changes in
-user friction and abstention behavior.
+Threshold, weight, missing-telemetry, non-compensation, and attribute-quorum studies
+are evaluated separately so that changes in security outcomes can be distinguished
+from changes in user friction and abstention behavior.
 
 \section{Preliminary Synthetic Results}
 Table~\ref{tab:synthetic-policy} reports the seeded 50,000-row synthetic policy
@@ -122,6 +128,7 @@ Binary compliance & 93.74\% & 0.00\% & 52.45\% \\
 Additive 0.75 & 12.50\% & 5.40\% & 91.62\% \\
 Additive 0.80 & 0.34\% & 13.58\% & 91.97\% \\
 Guarded 0.75 & 1.24\% & 5.40\% & 96.34\% \\
+Quorum 0.75, $q$=0.70, $k$=7 & 0.00\% & 6.64\% & 96.14\% \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -129,9 +136,13 @@ Guarded 0.75 & 1.24\% & 5.40\% & 96.34\% \\
 The threshold increase from 0.75 to 0.80 substantially reduces synthetic false allows
 but also increases safe step-up decisions. The guarded policy changes a different
 region of the decision surface: under the present generator it reduces false allows
-without increasing safe step-up relative to the 0.75 additive model. This apparent
-friction advantage is not yet externally validated and is partly attributable to the
-limited overlap between benign synthetic identity behavior and the guard region.
+without increasing safe step-up relative to the 0.75 additive model. The exploratory
+7-of-8 attribute-quorum baseline removes all false ALLOWs in this synthetic population
+while increasing safe step-up to 6.64\%. Its apparent performance is strongly aligned
+to the current generator: unsafe identity/adversarial scenarios generally contain at
+least two weak factors, whereas healthy cases are strong across nearly all factors.
+The quorum result is therefore evidence of a useful alternative non-compensatory
+structure, not evidence that this setting is optimal or externally superior.
 Accordingly, no production policy recommendation is made from these results.
 
 \section{Threats to Validity}
@@ -142,9 +153,11 @@ policy development, creating design-overfitting risk. Confidence intervals quant
 sampling variability conditional on the generator rather than uncertainty about the
 real enterprise population. The ordinary-access accuracy metric treats both STEP\_UP
 and DENY as blocked access and therefore must be interpreted alongside separate
-friction and false-allow metrics. External telemetry must be evaluated on temporally
-held-out data with frozen proxy definitions and policy settings before stronger claims
-are considered.
+friction and false-allow metrics. Alternative policies such as the attribute-quorum
+baseline can also become implicitly tuned to generator geometry; favorable synthetic
+performance must therefore be challenged under benign overlap and frozen external
+telemetry. External telemetry must be evaluated on temporally held-out data with
+frozen proxy definitions and policy settings before stronger claims are considered.
 
 \section{Discussion}
 
