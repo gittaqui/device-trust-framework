@@ -109,7 +109,13 @@ presented as preregistered confirmatory evidence.
 \subsection{Sensitivity and Scale Tests}
 Threshold, weight, missing-telemetry, non-compensation, and attribute-quorum studies
 are evaluated separately so that changes in security outcomes can be distinguished
-from changes in user friction and abstention behavior.
+from changes in user friction and abstention behavior. Core computational scalability
+is measured independently with repeated single-process wall-clock runs rather than a
+single timing observation, following the general performance-evaluation principle of
+quantifying run-to-run variability \cite{kalibera2013benchmarking}. The timed region
+contains only in-memory trust calculation; telemetry acquisition, network/API calls,
+storage, joins, and enforcement are excluded and therefore cannot be inferred from the
+microbenchmark.
 
 \section{Preliminary Synthetic Results}
 Table~\ref{tab:synthetic-policy} reports the seeded 50,000-row synthetic policy
@@ -145,6 +151,33 @@ The quorum result is therefore evidence of a useful alternative non-compensatory
 structure, not evidence that this setting is optimal or externally superior.
 Accordingly, no production policy recommendation is made from these results.
 
+\subsection{Core Computation Scalability}
+A seven-repetition microbenchmark was run after 20,000 warm-up decisions on Python
+3.13.5 in a Linux x86-64 execution environment. Table~\ref{tab:scale} reports the
+single-process result. Throughput remained approximately stable over a 50-fold increase
+in batch size, while mean per-decision computation remained near 5.5 microseconds.
+
+\begin{table}[ht]
+\centering
+\caption{Core trust-calculation microbenchmark.}
+\label{tab:scale}
+\begin{tabular}{rrrr}
+\toprule
+Decisions & Mean s & Decisions/s & $\mu$s/decision \\
+\midrule
+10,000 & 0.0554 & 180,574 & 5.538 \\
+100,000 & 0.5644 & 177,178 & 5.644 \\
+500,000 & 2.7495 & 181,848 & 5.499 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+These measurements support only the narrow conclusion that the transparent weighted
+calculation is computationally lightweight in the measured environment. They do not
+establish end-to-end enterprise capacity or latency because collection, normalization,
+data joins, remote services, persistence, enforcement, concurrency, and failures were
+outside the timed region.
+
 \section{Threats to Validity}
 Synthetic data cannot establish real-world security effectiveness. Construct validity,
 distribution assumptions, scenario prevalence, threshold subjectivity, and domain
@@ -158,6 +191,10 @@ baseline can also become implicitly tuned to generator geometry; favorable synth
 performance must therefore be challenged under benign overlap and frozen external
 telemetry. External telemetry must be evaluated on temporally held-out data with
 frozen proxy definitions and policy settings before stronger claims are considered.
+The scalability microbenchmark has separate external-validity limits: it was measured
+on one shared execution environment with fixed in-memory inputs and no I/O or
+concurrency. Its throughput must not be extrapolated to a complete enterprise access
+pipeline.
 
 \section{Discussion}
 
