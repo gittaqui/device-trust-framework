@@ -46,6 +46,33 @@ mkdir -p "$out_dir"
 for day in $(seq -w "$start_day" "$end_day"); do
   url="${LANL_DATA_FENCE_ROOT%/}/$subdir/${prefix}-$day.bz2"
   out="$out_dir/${prefix}-$day.bz2"
+  part="${out}.part"
+
   echo "Downloading $kind day $day -> $out"
-  wget -c "$url" -O "$out"
+  rm -f "$part"
+
+  # --server-response makes authentication/WAF failures visible in logs.
+  # --tries=3 handles transient transport failures without looping indefinitely.
+  wget --server-response --tries=3 --timeout=60 -c "$url" -O "$part"
+
+  # LANL source files are bzip2 archives. Reject HTML/WAF/login pages that may
+  # otherwise be saved with a .bz2 suffix.
+  magic="$(head -c 3 "$part" || true)"
+  if [[ "$magic" != "BZh" ]]; then
+    bytes="$(wc -c < "$part" | tr -d ' ')"
+    echo "ERROR: LANL response is not a bzip2 archive (size=${bytes} bytes, magic='${magic}')." >&2
+    echo "The signed data-fence URL may be expired/rejected, or an intermediary may have returned HTML." >&2
+    rm -f "$part"
+    exit 1
+  fi
+
+  if ! bzip2 -t "$part"; then
+    echo "ERROR: bzip2 integrity test failed for day $day." >&2
+    rm -f "$part"
+    exit 1
+  fi
+
+  mv "$part" "$out"
+  sha256sum "$out" > "${out}.sha256"
+  echo "Validated: $out"
 done
