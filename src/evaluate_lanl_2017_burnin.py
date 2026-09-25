@@ -21,16 +21,26 @@ BURN_IN_END = 21_600
 EVAL_END = 43_200
 
 
-def _quantiles(values: list[float]) -> dict[str, float]:
-    if not values:
+def _quantiles_from_counts(counts: Counter[float]) -> dict[str, float]:
+    if not counts:
         return {}
-    ordered = sorted(values)
-    n = len(ordered)
+    ordered = sorted(counts.items())
+    n = sum(counts.values())
+
+    def value_at(rank: int) -> float:
+        seen = 0
+        for value, count in ordered:
+            seen += count
+            if rank < seen:
+                return float(value)
+        return float(ordered[-1][0])
+
     out: dict[str, float] = {}
     for p in (0.0, 0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99, 1.0):
         idx = (n - 1) * p
         lo, hi = math.floor(idx), math.ceil(idx)
-        value = ordered[lo] if lo == hi else ordered[lo] * (hi - idx) + ordered[hi] * (idx - lo)
+        lo_value, hi_value = value_at(lo), value_at(hi)
+        value = lo_value if lo == hi else lo_value * (hi - idx) + hi_value * (idx - lo)
         out[f"{p:g}"] = round(float(value), 6)
     return out
 
@@ -42,9 +52,9 @@ def evaluate(path: Path) -> dict[str, object]:
     auth = starts = failures = outcome_auth = 0
     novel_edges = novel_processes = explicit = privileged = 0
     guard_identity = guard_anomaly = guard_union = 0
-    assurance: list[float] = []
-    risk: list[float] = []
-    freshness: list[float] = []
+    assurance_counts: Counter[float] = Counter()
+    risk_counts: Counter[float] = Counter()
+    freshness_counts: Counter[float] = Counter()
     users: set[str] = set()
     hosts: set[str] = set()
     burnin_state: dict[str, int] | None = None
@@ -101,9 +111,9 @@ def evaluate(path: Path) -> dict[str, object]:
             a = float(row["identity_assurance"])
             r = float(row["anomaly_risk"])
             f = float(row["freshness"])
-            assurance.append(a)
-            risk.append(r)
-            freshness.append(f)
+            assurance_counts[a] += 1
+            risk_counts[r] += 1
+            freshness_counts[f] += 1
 
             gi = a < 0.40
             ga = r > 0.75
@@ -146,9 +156,9 @@ def evaluate(path: Path) -> dict[str, object]:
             "novel_process_rate_over_process_starts": round(novel_processes / starts, 6) if starts else 0.0,
             "explicit_credential_events": explicit,
             "privileged_logon_events": privileged,
-            "identity_assurance_quantiles": _quantiles(assurance),
-            "anomaly_risk_quantiles": _quantiles(risk),
-            "freshness_quantiles": _quantiles(freshness),
+            "identity_assurance_quantiles": _quantiles_from_counts(assurance_counts),
+            "anomaly_risk_quantiles": _quantiles_from_counts(risk_counts),
+            "freshness_quantiles": _quantiles_from_counts(freshness_counts),
             "guard_identity_trigger_count": guard_identity,
             "guard_anomaly_trigger_count": guard_anomaly,
             "guard_step_up_count": guard_union,
