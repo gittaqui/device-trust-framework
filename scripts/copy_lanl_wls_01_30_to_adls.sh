@@ -107,7 +107,7 @@ head_md5() {
   local url="$1"
   local hdr
   hdr="$(mktemp)"
-  if ! curl --silent --show-error --fail --head --dump-header "$hdr" --output /dev/null "$url"; then
+  if ! curl --silent --fail --head --dump-header "$hdr" --output /dev/null "$url" 2>/dev/null; then
     rm -f "$hdr"
     return 1
   fi
@@ -146,7 +146,7 @@ PY
 
   headers="$(mktemp)"
   body="$(mktemp)"
-  http_code="$(curl     --silent --show-error     --retry 4 --retry-all-errors --retry-delay 3     --request PUT     --header "x-ms-version: ${AZURE_VERSION}"     --header "x-ms-date: $(LC_ALL=C date -u '+%a, %d %b %Y %H:%M:%S GMT')"     --header "x-ms-copy-source: ${source_url}"     --header "x-ms-blob-type: BlockBlob"     --header "x-ms-source-content-md5: ${expected_md5_b64}"     --header "x-ms-blob-content-md5: ${expected_md5_b64}"     --header "x-ms-meta-lanl-sha256: ${expected_sha256}"     --header "x-ms-meta-lanl-day: ${day}"     --header "Content-Type: application/x-bzip2"     --header "Content-Length: 0"     --header "If-None-Match: *"     --dump-header "$headers"     --output "$body"     --write-out '%{http_code}'     "$dest_url")"
+  http_code="$(curl     --silent --show-error     --retry 4 --retry-all-errors --retry-delay 3     --request PUT     --header "x-ms-version: ${AZURE_VERSION}"     --header "x-ms-date: $(LC_ALL=C date -u '+%a, %d %b %Y %H:%M:%S GMT')"     --header "x-ms-copy-source: ${source_url}"     --header "x-ms-blob-type: BlockBlob"     --header "x-ms-source-content-md5: ${expected_md5_b64}"     --header "x-ms-blob-content-md5: ${expected_md5_b64}"     --header "x-ms-meta-lanl_sha256: ${expected_sha256}"     --header "x-ms-meta-lanl_day: ${day}"     --header "Content-Type: application/x-bzip2"     --header "Content-Length: 0"     --header "If-None-Match: *"     --dump-header "$headers"     --output "$body"     --write-out '%{http_code}'     "$dest_url")"
 
   if [[ "$http_code" != "201" ]]; then
     echo "ERROR: Azure Put Blob From URL returned HTTP $http_code for $file" >&2
