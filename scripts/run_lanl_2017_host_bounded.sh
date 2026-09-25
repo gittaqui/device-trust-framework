@@ -11,7 +11,19 @@ max_rows="${2:-100000}"
 tmp_file="$(mktemp)"
 trap 'rm -f "$tmp_file"' EXIT
 
-bzcat "$archive" | head -n "$max_rows" > "$tmp_file"
+python - "$archive" "$max_rows" "$tmp_file" <<'PY'
+import bz2
+import sys
+
+archive, max_rows, output = sys.argv[1], int(sys.argv[2]), sys.argv[3]
+with bz2.open(archive, "rt", encoding="utf-8", errors="replace") as source, open(
+    output, "w", encoding="utf-8"
+) as target:
+    for index, line in enumerate(source):
+        if index >= max_rows:
+            break
+        target.write(line)
+PY
 
 python -m src.lanl_2017_host_adapter \
   --input "$tmp_file" \
