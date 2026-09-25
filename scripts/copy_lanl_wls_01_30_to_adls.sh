@@ -115,103 +115,171 @@ head_md5() {
   rm -f "$hdr"
 }
 
-for day_num in $(seq 1 30); do
-  day="$(printf '%02d' "$day_num")"
-  file="wls_day-${day}.bz2"
-  source_url="${SOURCE_BASE}/${file}"
-  dest_url="${BLOB_DIR_URL}/${file}?${SAS_QUERY}"
-  expected_md5_hex="${MD5[$day]}"
-  expected_sha256="${SHA256[$day]}"
-  expected_md5_b64="$(python3 - "$expected_md5_hex" <<'PY'
-import base64, binascii, sys
-print(base64.b64encode(binascii.unhexlify(sys.argv[1])).decode("ascii"))
-PY
-)"
+MAX_PARALLEL="${LANL_UPLOAD_PARALLEL:-4}"
+if ! [[ "$MAX_PARALLEL" =~ ^[1-9][0-9]*$ ]]; then
+  echo "ERROR: LANL_UPLOAD_PARALLEL must be a positive integer." >&2
+  exit 9
+fi
 
-  echo "Day $day: $file"
+# Keep AzCopy plans/logs off the persistent Cloud Shell home share.
+export AZCOPY_JOB_PLAN_LOCATION="/tmp/azcopy-plans"
+export AZCOPY_LOG_LOCATION="/tmp/azcopy-logs"
+mkdir -p "$AZCOPY_JOB_PLAN_LOCATION" "$AZCOPY_LOG_LOCATION"
 
-  # If a destination already exists, accept it only when its stored MD5 is
-  # exactly the published LANL value.
-  existing_md5="$(head_md5 "$dest_url" || true)"
-  if [[ -n "$existing_md5" ]]; then
-    if [[ "$existing_md5" == "$expected_md5_b64" ]]; then
-      echo "  already present; MD5 matches published LANL checksum"
-      printf '%s,%s,%s,%s,%s,%s\n'         "$day" "$file" "$source_url" "$expected_md5_hex" "$expected_sha256" "existing_verified" >> "$manifest"
-      continue
+manifest_dir="$(mktemp -d)"
+trap 'rm -rf "$manifest_dir" "$manifest"' EXIT
+
+process_day() {
+  local day_num="$1"
+  local row_file
+  row_file="$manifest_dir/$(printf '%02d' "$day_num").csv"
+    day="$(printf '%02d' "$day_num")"
+    file="wls_day-${day}.bz2"
+    source_url="${SOURCE_BASE}/${file}"
+    dest_url="${BLOB_DIR_URL}/${file}?${SAS_QUERY}"
+    expected_md5_hex="${MD5[$day]}"
+    expected_sha256="${SHA256[$day]}"
+    expected_md5_b64="$(python3 - "$expected_md5_hex" <<'PY'
+  import base64, binascii, sys
+  print(base64.b64encode(binascii.unhexlify(sys.argv[1])).decode("ascii"))
+  PY
+  )"
+  
+    echo "Day $day: $file"
+  
+    # If a destination already exists, accept it only when its stored MD5 is
+    # exactly the published LANL value.
+    existing_md5="$(head_md5 "$dest_url" || true)"
+    if [[ -n "$existing_md5" ]]; then
+      if [[ "$existing_md5" == "$expected_md5_b64" ]]; then
+        echo "  already present; MD5 matches published LANL checksum"
+        printf '%s,%s,%s,%s,%s,%s\n'         "$day" "$file" "$source_url" "$expected_md5_hex" "$expected_sha256" "existing_verified" >> "$row_file"
+        continue
+      fi
+  
+      echo "ERROR: destination exists but stored Content-MD5 does not match LANL for $file" >&2
+      exit 3
     fi
+  
+    if ! command -v azcopy >/dev/null 2>&1; then
+      echo "ERROR: azcopy is required. Azure Cloud Shell normally includes AzCopy." >&2
+      exit 4
+    fi
+  
+    tmp_file="$(mktemp "/tmp/${file}.XXXXXX")"
+  trap 'rm -f "$tmp_file"' RETURN
+  
+    echo "  downloading to temporary file"
+    curl \
+      --fail \
+      --location \
+      --silent \
+      --show-error \
+      --retry 5 \
+      --retry-all-errors \
+      --retry-delay 3 \
+      --output "$tmp_file" \
+      "$source_url"
+  
+    if [[ "$(head -c 3 "$tmp_file")" != "BZh" ]]; then
+      echo "ERROR: $file is not a valid bzip2 archive (missing BZh magic)." >&2
+      exit 5
+    fi
+  
+    echo "  validating bzip2 structure"
+    bzip2 -t "$tmp_file"
+  
+    actual_md5="$(md5sum "$tmp_file" | awk '{print $1}')"
+    actual_sha256="$(sha256sum "$tmp_file" | awk '{print $1}')"
+    actual_size="$(stat -c%s "$tmp_file")"
+  
+    if [[ "$actual_md5" != "$expected_md5_hex" ]]; then
+      echo "ERROR: MD5 mismatch for $file" >&2
+      echo "Expected: $expected_md5_hex" >&2
+      echo "Actual  : $actual_md5" >&2
+      exit 6
+    fi
+  
+    if [[ "$actual_sha256" != "$expected_sha256" ]]; then
+      echo "ERROR: SHA-256 mismatch for $file" >&2
+      echo "Expected: $expected_sha256" >&2
+      echo "Actual  : $actual_sha256" >&2
+      exit 7
+    fi
+  
+    echo "  checksum verified; uploading to ADLS"
+    azcopy cp \
+      "$tmp_file" \
+      "$dest_url" \
+      --from-to=LocalBlob \
+      --overwrite=true \
+      --put-md5 \
+      --output-type=text
+  
+    stored_md5="$(head_md5 "$dest_url" || true)"
+    if [[ "$stored_md5" != "$expected_md5_b64" ]]; then
+      echo "ERROR: destination Content-MD5 verification failed for $file" >&2
+      exit 8
+    fi
+  
+    rm -f "$tmp_file"
+    tmp_file=""
+  
+    echo "  uploaded to ADLS; MD5 verified"
+    printf '%s,%s,%s,%s,%s,%s\n'     "$day" "$file" "$source_url" "$expected_md5_hex" "$expected_sha256" "copied_verified" >> "$row_file"
+  
+}
 
-    echo "ERROR: destination exists but stored Content-MD5 does not match LANL for $file" >&2
-    exit 3
+echo "Parallel transfers: $MAX_PARALLEL"
+echo "Source: $SOURCE_BASE"
+echo "Destination: $BLOB_DIR_URL"
+echo
+
+failed=0
+pids=()
+days=()
+
+for day_num in $(seq 1 30); do
+  process_day "$day_num" &
+  pids+=("$!")
+  days+=("$day_num")
+
+  if (( ${#pids[@]} >= MAX_PARALLEL )); then
+    for i in "${!pids[@]}"; do
+      if ! wait "${pids[$i]}"; then
+        echo "ERROR: day $(printf '%02d' "${days[$i]}") failed." >&2
+        failed=1
+      fi
+    done
+    pids=()
+    days=()
+
+    if (( failed )); then
+      echo "One or more transfers failed. Fix the error and rerun; verified days will be skipped." >&2
+      exit 10
+    fi
   fi
-
-  if ! command -v azcopy >/dev/null 2>&1; then
-    echo "ERROR: azcopy is required. Azure Cloud Shell normally includes AzCopy." >&2
-    exit 4
-  fi
-
-  tmp_file="$(mktemp "/tmp/${file}.XXXXXX")"
-
-  echo "  downloading to temporary file"
-  curl \
-    --fail \
-    --location \
-    --silent \
-    --show-error \
-    --retry 5 \
-    --retry-all-errors \
-    --retry-delay 3 \
-    --output "$tmp_file" \
-    "$source_url"
-
-  if [[ "$(head -c 3 "$tmp_file")" != "BZh" ]]; then
-    echo "ERROR: $file is not a valid bzip2 archive (missing BZh magic)." >&2
-    exit 5
-  fi
-
-  echo "  validating bzip2 structure"
-  bzip2 -t "$tmp_file"
-
-  actual_md5="$(md5sum "$tmp_file" | awk '{print $1}')"
-  actual_sha256="$(sha256sum "$tmp_file" | awk '{print $1}')"
-  actual_size="$(stat -c%s "$tmp_file")"
-
-  if [[ "$actual_md5" != "$expected_md5_hex" ]]; then
-    echo "ERROR: MD5 mismatch for $file" >&2
-    echo "Expected: $expected_md5_hex" >&2
-    echo "Actual  : $actual_md5" >&2
-    exit 6
-  fi
-
-  if [[ "$actual_sha256" != "$expected_sha256" ]]; then
-    echo "ERROR: SHA-256 mismatch for $file" >&2
-    echo "Expected: $expected_sha256" >&2
-    echo "Actual  : $actual_sha256" >&2
-    exit 7
-  fi
-
-  echo "  checksum verified; uploading to ADLS"
-  azcopy cp \
-    "$tmp_file" \
-    "$dest_url" \
-    --from-to=LocalBlob \
-    --overwrite=true \
-    --put-md5 \
-    --output-type=text
-
-  stored_md5="$(head_md5 "$dest_url" || true)"
-  if [[ "$stored_md5" != "$expected_md5_b64" ]]; then
-    echo "ERROR: destination Content-MD5 verification failed for $file" >&2
-    exit 8
-  fi
-
-  rm -f "$tmp_file"
-  tmp_file=""
-
-  echo "  uploaded to ADLS; MD5 verified"
-  printf '%s,%s,%s,%s,%s,%s\n'     "$day" "$file" "$source_url" "$expected_md5_hex" "$expected_sha256" "copied_verified" >> "$manifest"
-
-
 done
+
+for i in "${!pids[@]}"; do
+  if ! wait "${pids[$i]}"; then
+    echo "ERROR: day $(printf '%02d' "${days[$i]}") failed." >&2
+    failed=1
+  fi
+done
+
+if (( failed )); then
+  echo "One or more transfers failed. Fix the error and rerun; verified days will be skipped." >&2
+  exit 10
+fi
+
+# Build the final deterministic manifest from per-day fragments.
+: > "$manifest"
+printf 'day,filename,source_url,expected_md5,expected_sha256,status\n' >> "$manifest"
+for row in "$manifest_dir"/*.csv; do
+  cat "$row" >> "$manifest"
+done
+
 
 # Upload a small transfer manifest into the same scoped directory.
 manifest_url="${BLOB_DIR_URL}/wls_days_01_30_transfer_manifest.csv?${SAS_QUERY}"
