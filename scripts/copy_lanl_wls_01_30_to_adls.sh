@@ -1,37 +1,29 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Copy LANL 2017 Windows Logging Service days 01-30 directly from the
-# Imperial College public mirror into an ADLS Gen2 directory.
-#
-# Each LANL archive is downloaded to a temporary local file, verified against
-# the published checksums, uploaded with AzCopy, then deleted before the next day.
-#
-# Required environment variable:
-#   LANL_WLS_ADLS_SAS_URL
-# Example shape (do not commit the real SAS):
-#   https://<account>.dfs.core.windows.net/<filesystem>/raw/lanl-2017/wls?<sas>
-#
-# The SAS must be directory-scoped (sr=d) and include at least c,w,r.
-# List permission is useful but not required by this script.
-
 : "${LANL_WLS_ADLS_SAS_URL:?Set LANL_WLS_ADLS_SAS_URL to the directory-scoped SAS URI}"
 
 SOURCE_BASE="https://lanl.ma.ic.ac.uk/data/2017/wls"
-AZURE_VERSION="2023-11-03"
-
 DIR_URL="${LANL_WLS_ADLS_SAS_URL%%\?*}"
 SAS_QUERY="${LANL_WLS_ADLS_SAS_URL#*\?}"
+BLOB_DIR_URL="${DIR_URL/.dfs.core.windows.net/.blob.core.windows.net}"
 
 if [[ "$DIR_URL" == "$LANL_WLS_ADLS_SAS_URL" ]]; then
   echo "ERROR: LANL_WLS_ADLS_SAS_URL does not contain a SAS query string." >&2
   exit 2
 fi
 
-# User-delegation directory SAS tokens for ADLS Gen2 are Blob-service SAS
-# tokens. The canonical resource is /blob/... for both dfs and blob endpoints,
-# so use the Blob endpoint for Put Blob From URL.
-BLOB_DIR_URL="${DIR_URL/.dfs.core.windows.net/.blob.core.windows.net}"
+if ! command -v azcopy >/dev/null 2>&1; then
+  echo "ERROR: azcopy is required. Azure Cloud Shell normally includes it." >&2
+  exit 3
+fi
+
+for cmd in curl bzip2 md5sum sha256sum python3 stat; do
+  command -v "$cmd" >/dev/null 2>&1 || {
+    echo "ERROR: required command not found: $cmd" >&2
+    exit 3
+  }
+done
 
 declare -A MD5=(
   [01]=36cfb5acfac150608132d6a8b029e3b1
@@ -99,145 +91,122 @@ declare -A SHA256=(
   [30]=ac09fe5502d1f90b8bd259548c8fea4c95cb6df5f0d26b9ef880d894ad7775c3
 )
 
-manifest="$(mktemp)"
-trap 'rm -f "$manifest" "${tmp_file:-}"' EXIT
-printf 'day,filename,source_url,expected_md5,expected_sha256,status\n' > "$manifest"
-
-head_md5() {
-  local url="$1"
-  local hdr
-  hdr="$(mktemp)"
-  if ! curl --silent --fail --head --dump-header "$hdr" --output /dev/null "$url" 2>/dev/null; then
-    rm -f "$hdr"
-    return 1
-  fi
-  awk 'BEGIN{IGNORECASE=1} /^Content-MD5:/ {sub(/\r$/, "", $2); print $2}' "$hdr" | tail -1
-  rm -f "$hdr"
-}
-
 MAX_PARALLEL="${LANL_UPLOAD_PARALLEL:-4}"
 if ! [[ "$MAX_PARALLEL" =~ ^[1-9][0-9]*$ ]]; then
   echo "ERROR: LANL_UPLOAD_PARALLEL must be a positive integer." >&2
-  exit 9
+  exit 4
 fi
 
-# Keep AzCopy plans/logs off the persistent Cloud Shell home share.
+available_kb="$(df -Pk /tmp | awk 'NR==2 {print $4}')"
+if (( available_kb < 2500000 )) && [[ -z "${LANL_UPLOAD_PARALLEL+x}" ]]; then
+  MAX_PARALLEL=2
+  echo "Low /tmp free space detected; automatically reducing parallelism to 2."
+fi
+
 export AZCOPY_JOB_PLAN_LOCATION="/tmp/azcopy-plans"
 export AZCOPY_LOG_LOCATION="/tmp/azcopy-logs"
+export AZCOPY_CONCURRENCY_VALUE="${AZCOPY_CONCURRENCY_VALUE:-16}"
 mkdir -p "$AZCOPY_JOB_PLAN_LOCATION" "$AZCOPY_LOG_LOCATION"
 
-manifest_dir="$(mktemp -d)"
-trap 'rm -rf "$manifest_dir" "$manifest"' EXIT
+work_dir="$(mktemp -d /tmp/lanl-wls-upload.XXXXXX)"
+manifest="$work_dir/wls_days_01_30_transfer_manifest.csv"
+trap 'rm -rf "$work_dir"' EXIT
 
-process_day() {
-  local day_num="$1"
-  local row_file
-  row_file="$manifest_dir/$(printf '%02d' "$day_num").csv"
-    day="$(printf '%02d' "$day_num")"
-    file="wls_day-${day}.bz2"
-    source_url="${SOURCE_BASE}/${file}"
-    dest_url="${BLOB_DIR_URL}/${file}?${SAS_QUERY}"
-    expected_md5_hex="${MD5[$day]}"
-    expected_sha256="${SHA256[$day]}"
-    expected_md5_b64="$(python3 - "$expected_md5_hex" <<'PY'
-  import base64, binascii, sys
-  print(base64.b64encode(binascii.unhexlify(sys.argv[1])).decode("ascii"))
-  PY
-  )"
-  
-    echo "Day $day: $file"
-  
-    # If a destination already exists, accept it only when its stored MD5 is
-    # exactly the published LANL value.
-    existing_md5="$(head_md5 "$dest_url" || true)"
-    if [[ -n "$existing_md5" ]]; then
-      if [[ "$existing_md5" == "$expected_md5_b64" ]]; then
-        echo "  already present; MD5 matches published LANL checksum"
-        printf '%s,%s,%s,%s,%s,%s\n'         "$day" "$file" "$source_url" "$expected_md5_hex" "$expected_sha256" "existing_verified" >> "$row_file"
-        continue
-      fi
-  
-      echo "ERROR: destination exists but stored Content-MD5 does not match LANL for $file" >&2
-      exit 3
-    fi
-  
-    if ! command -v azcopy >/dev/null 2>&1; then
-      echo "ERROR: azcopy is required. Azure Cloud Shell normally includes AzCopy." >&2
-      exit 4
-    fi
-  
-    tmp_file="$(mktemp "/tmp/${file}.XXXXXX")"
-  trap 'rm -f "$tmp_file"' RETURN
-  
-    echo "  downloading to temporary file"
-    curl \
-      --fail \
-      --location \
-      --silent \
-      --show-error \
-      --retry 5 \
-      --retry-all-errors \
-      --retry-delay 3 \
-      --output "$tmp_file" \
-      "$source_url"
-  
-    if [[ "$(head -c 3 "$tmp_file")" != "BZh" ]]; then
-      echo "ERROR: $file is not a valid bzip2 archive (missing BZh magic)." >&2
-      exit 5
-    fi
-  
-    echo "  validating bzip2 structure"
-    bzip2 -t "$tmp_file"
-  
-    actual_md5="$(md5sum "$tmp_file" | awk '{print $1}')"
-    actual_sha256="$(sha256sum "$tmp_file" | awk '{print $1}')"
-    actual_size="$(stat -c%s "$tmp_file")"
-  
-    if [[ "$actual_md5" != "$expected_md5_hex" ]]; then
-      echo "ERROR: MD5 mismatch for $file" >&2
-      echo "Expected: $expected_md5_hex" >&2
-      echo "Actual  : $actual_md5" >&2
-      exit 6
-    fi
-  
-    if [[ "$actual_sha256" != "$expected_sha256" ]]; then
-      echo "ERROR: SHA-256 mismatch for $file" >&2
-      echo "Expected: $expected_sha256" >&2
-      echo "Actual  : $actual_sha256" >&2
-      exit 7
-    fi
-  
-    echo "  checksum verified; uploading to ADLS"
-    azcopy cp \
-      "$tmp_file" \
-      "$dest_url" \
-      --from-to=LocalBlob \
-      --overwrite=true \
-      --put-md5 \
-      --output-type=text
-  
-    stored_md5="$(head_md5 "$dest_url" || true)"
-    if [[ "$stored_md5" != "$expected_md5_b64" ]]; then
-      echo "ERROR: destination Content-MD5 verification failed for $file" >&2
-      exit 8
-    fi
-  
-    rm -f "$tmp_file"
-    tmp_file=""
-  
-    echo "  uploaded to ADLS; MD5 verified"
-    printf '%s,%s,%s,%s,%s,%s\n'     "$day" "$file" "$source_url" "$expected_md5_hex" "$expected_sha256" "copied_verified" >> "$row_file"
-  
+head_md5() {
+  local url="$1"
+  curl --silent --fail --head "$url" 2>/dev/null     | awk 'BEGIN{IGNORECASE=1} /^Content-MD5:/ {gsub(/\r/, "", $2); print $2}'     | tail -1
 }
 
-echo "Parallel transfers: $MAX_PARALLEL"
-echo "Source: $SOURCE_BASE"
-echo "Destination: $BLOB_DIR_URL"
+process_day() (
+  set -euo pipefail
+  local day_num="$1"
+  local day file source_url dest_url expected_md5_hex expected_sha256 expected_md5_b64
+  local existing_md5 tmp_file actual_md5 actual_sha256 actual_size row_file
+
+  day="$(printf '%02d' "$day_num")"
+  file="wls_day-${day}.bz2"
+  source_url="${SOURCE_BASE}/${file}"
+  dest_url="${BLOB_DIR_URL}/${file}?${SAS_QUERY}"
+  expected_md5_hex="${MD5[$day]}"
+  expected_sha256="${SHA256[$day]}"
+  row_file="$work_dir/${day}.csv"
+
+  expected_md5_b64="$(python3 - "$expected_md5_hex" <<'PY'
+import base64, binascii, sys
+print(base64.b64encode(binascii.unhexlify(sys.argv[1])).decode("ascii"))
+PY
+)"
+
+  echo "[$day] checking destination"
+  existing_md5="$(head_md5 "$dest_url" || true)"
+  if [[ "$existing_md5" == "$expected_md5_b64" ]]; then
+    echo "[$day] already present and verified"
+    printf '%s,%s,%s,%s,%s,%s,%s\n'       "$day" "$file" "$source_url" "" "$expected_md5_hex" "$expected_sha256" "existing_verified"       > "$row_file"
+    exit 0
+  fi
+
+  tmp_file="$(mktemp "/tmp/${file}.XXXXXX")"
+  trap 'rm -f "$tmp_file"' EXIT
+
+  echo "[$day] downloading"
+  curl     --fail     --location     --silent     --show-error     --retry 5     --retry-all-errors     --retry-delay 3     --output "$tmp_file"     "$source_url"
+
+  [[ "$(head -c 3 "$tmp_file")" == "BZh" ]] || {
+    echo "[$day] ERROR: missing BZh magic" >&2
+    exit 21
+  }
+
+  echo "[$day] validating archive"
+  bzip2 -t "$tmp_file"
+
+  actual_size="$(stat -c%s "$tmp_file")"
+  actual_md5="$(md5sum "$tmp_file" | awk '{print $1}')"
+  actual_sha256="$(sha256sum "$tmp_file" | awk '{print $1}')"
+
+  [[ "$actual_md5" == "$expected_md5_hex" ]] || {
+    echo "[$day] ERROR: MD5 mismatch; expected $expected_md5_hex got $actual_md5" >&2
+    exit 22
+  }
+
+  [[ "$actual_sha256" == "$expected_sha256" ]] || {
+    echo "[$day] ERROR: SHA-256 mismatch; expected $expected_sha256 got $actual_sha256" >&2
+    exit 23
+  }
+
+  echo "[$day] uploading $actual_size bytes"
+  azcopy cp     "$tmp_file"     "$dest_url"     --from-to=LocalBlob     --overwrite=true     --put-md5     --log-level=ERROR     --output-type=text
+
+  existing_md5="$(head_md5 "$dest_url" || true)"
+  [[ "$existing_md5" == "$expected_md5_b64" ]] || {
+    echo "[$day] ERROR: destination Content-MD5 verification failed" >&2
+    exit 24
+  }
+
+  printf '%s,%s,%s,%s,%s,%s,%s\n'     "$day" "$file" "$source_url" "$actual_size" "$expected_md5_hex" "$expected_sha256" "uploaded_verified"     > "$row_file"
+
+  echo "[$day] COMPLETE"
+)
+
+echo "LANL WLS days 01-30 -> ADLS"
+echo "Parallel workers: $MAX_PARALLEL"
+echo "AzCopy concurrency per worker: $AZCOPY_CONCURRENCY_VALUE"
 echo
 
 failed=0
 pids=()
 days=()
+
+wait_batch() {
+  local i
+  for i in "${!pids[@]}"; do
+    if ! wait "${pids[$i]}"; then
+      echo "Day $(printf '%02d' "${days[$i]}") FAILED." >&2
+      failed=1
+    fi
+  done
+  pids=()
+  days=()
+}
 
 for day_num in $(seq 1 30); do
   process_day "$day_num" &
@@ -245,46 +214,32 @@ for day_num in $(seq 1 30); do
   days+=("$day_num")
 
   if (( ${#pids[@]} >= MAX_PARALLEL )); then
-    for i in "${!pids[@]}"; do
-      if ! wait "${pids[$i]}"; then
-        echo "ERROR: day $(printf '%02d' "${days[$i]}") failed." >&2
-        failed=1
-      fi
-    done
-    pids=()
-    days=()
-
+    wait_batch
     if (( failed )); then
-      echo "One or more transfers failed. Fix the error and rerun; verified days will be skipped." >&2
-      exit 10
+      echo "Stopping after this batch. Rerun after correcting the error; verified days will be skipped." >&2
+      exit 30
     fi
   fi
 done
 
-for i in "${!pids[@]}"; do
-  if ! wait "${pids[$i]}"; then
-    echo "ERROR: day $(printf '%02d' "${days[$i]}") failed." >&2
-    failed=1
-  fi
-done
-
-if (( failed )); then
-  echo "One or more transfers failed. Fix the error and rerun; verified days will be skipped." >&2
-  exit 10
+if (( ${#pids[@]} > 0 )); then
+  wait_batch
 fi
 
-# Build the final deterministic manifest from per-day fragments.
-: > "$manifest"
-printf 'day,filename,source_url,expected_md5,expected_sha256,status\n' >> "$manifest"
-for row in "$manifest_dir"/*.csv; do
-  cat "$row" >> "$manifest"
+if (( failed )); then
+  echo "One or more days failed. Rerun; completed verified days will be skipped." >&2
+  exit 30
+fi
+
+printf 'day,filename,source_url,size_bytes,expected_md5,expected_sha256,status\n' > "$manifest"
+for day_num in $(seq 1 30); do
+  day="$(printf '%02d' "$day_num")"
+  cat "$work_dir/${day}.csv" >> "$manifest"
 done
 
-
-# Upload a small transfer manifest into the same scoped directory.
 manifest_url="${BLOB_DIR_URL}/wls_days_01_30_transfer_manifest.csv?${SAS_QUERY}"
-curl   --silent --show-error --fail   --request PUT   --header "x-ms-version: ${AZURE_VERSION}"   --header "x-ms-date: $(LC_ALL=C date -u '+%a, %d %b %Y %H:%M:%S GMT')"   --header "x-ms-blob-type: BlockBlob"   --header "Content-Type: text/csv"   --data-binary "@$manifest"   "$manifest_url" >/dev/null
+azcopy cp   "$manifest"   "$manifest_url"   --from-to=LocalBlob   --overwrite=true   --log-level=ERROR   --output-type=text
 
 echo
-echo "All 30 LANL WLS archives copied and checksum-verified."
-echo "Transfer manifest written to the same ADLS directory."
+echo "SUCCESS: all 30 WLS archives are in ADLS and checksum-verified."
+echo "Manifest: wls_days_01_30_transfer_manifest.csv"
