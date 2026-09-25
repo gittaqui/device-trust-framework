@@ -59,3 +59,12 @@ Not permitted: false-positive/false-negative rates, attack detection, precision/
 ## Stopping rule
 
 Process the complete evaluation interval unless a data-integrity or parser failure prevents completion. Negative or inconvenient findings are retained.
+
+
+## Execution acceleration rule
+
+The raw day-1 archive is large enough that single-process bzip2 decompression can exceed constrained research-runner time limits. A fast path may therefore use `src/evaluate_lanl_2017_fast.py`, which preserves the frozen feature formulas and history-update order while using `orjson` and bounded frequency counters.
+
+Before the fast path may inspect any event at `Time >= 21,600`, it must reproduce the already-inspected first-100,000-event frozen prefix metrics exactly. On 2026-09-25 it matched all key prefix outputs exactly: 100,000 processed; 45,743 authentication events; 40,371 process starts; 1,008 authentication failures; 7,374 novel user-host edges; 1,295 explicit-credential events; 13,495 privileged-logon events; 26,801 novel process starts; mean identity assurance 0.973553; mean anomaly risk 0.084060; and 417 frozen guard challenges.
+
+This equivalence check was completed before opening the 6-12 hour evaluation window.
