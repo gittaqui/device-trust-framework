@@ -6,3 +6,6 @@ paper/*.aux
 paper/*.log
 paper/*.out
 paper/*.pdf
+
+# External LANL raw data (large/provider-hosted)
+data/external/lanl-2017/raw/
