@@ -4,8 +4,8 @@ set -euo pipefail
 # Copy LANL 2017 Windows Logging Service days 01-30 directly from the
 # Imperial College public mirror into an ADLS Gen2 directory.
 #
-# No LANL archive is downloaded to local disk. Azure Storage performs a
-# server-side Put Blob From URL for each source object.
+# Each LANL archive is downloaded to a temporary local file, verified against
+# the published checksums, uploaded with AzCopy, then deleted before the next day.
 #
 # Required environment variable:
 #   LANL_WLS_ADLS_SAS_URL
@@ -100,7 +100,7 @@ declare -A SHA256=(
 )
 
 manifest="$(mktemp)"
-trap 'rm -f "$manifest" "${headers:-}" "${body:-}"' EXIT
+trap 'rm -f "$manifest" "${tmp_file:-}"' EXIT
 printf 'day,filename,source_url,expected_md5,expected_sha256,status\n' > "$manifest"
 
 head_md5() {
@@ -144,27 +144,73 @@ PY
     exit 3
   fi
 
-  headers="$(mktemp)"
-  body="$(mktemp)"
-  http_code="$(curl     --silent --show-error     --retry 4 --retry-all-errors --retry-delay 3     --request PUT     --header "x-ms-version: ${AZURE_VERSION}"     --header "x-ms-date: $(LC_ALL=C date -u '+%a, %d %b %Y %H:%M:%S GMT')"     --header "x-ms-copy-source: ${source_url}"     --header "x-ms-blob-type: BlockBlob"     --header "x-ms-source-content-md5: ${expected_md5_b64}"     --header "x-ms-blob-content-md5: ${expected_md5_b64}"     --header "x-ms-meta-lanl_sha256: ${expected_sha256}"     --header "x-ms-meta-lanl_day: ${day}"     --header "Content-Type: application/x-bzip2"     --header "Content-Length: 0"     --header "If-None-Match: *"     --dump-header "$headers"     --output "$body"     --write-out '%{http_code}'     "$dest_url")"
-
-  if [[ "$http_code" != "201" ]]; then
-    echo "ERROR: Azure Put Blob From URL returned HTTP $http_code for $file" >&2
-    sed -n '1,40p' "$body" >&2 || true
+  if ! command -v azcopy >/dev/null 2>&1; then
+    echo "ERROR: azcopy is required. Azure Cloud Shell normally includes AzCopy." >&2
     exit 4
   fi
 
-  stored_md5="$(head_md5 "$dest_url" || true)"
-  if [[ "$stored_md5" != "$expected_md5_b64" ]]; then
-    echo "ERROR: post-copy Content-MD5 verification failed for $file" >&2
+  tmp_file="$(mktemp "/tmp/${file}.XXXXXX")"
+
+  echo "  downloading to temporary file"
+  curl \
+    --fail \
+    --location \
+    --silent \
+    --show-error \
+    --retry 5 \
+    --retry-all-errors \
+    --retry-delay 3 \
+    --output "$tmp_file" \
+    "$source_url"
+
+  if [[ "$(head -c 3 "$tmp_file")" != "BZh" ]]; then
+    echo "ERROR: $file is not a valid bzip2 archive (missing BZh magic)." >&2
     exit 5
   fi
 
-  echo "  copied directly to ADLS; MD5 verified"
+  echo "  validating bzip2 structure"
+  bzip2 -t "$tmp_file"
+
+  actual_md5="$(md5sum "$tmp_file" | awk '{print $1}')"
+  actual_sha256="$(sha256sum "$tmp_file" | awk '{print $1}')"
+  actual_size="$(stat -c%s "$tmp_file")"
+
+  if [[ "$actual_md5" != "$expected_md5_hex" ]]; then
+    echo "ERROR: MD5 mismatch for $file" >&2
+    echo "Expected: $expected_md5_hex" >&2
+    echo "Actual  : $actual_md5" >&2
+    exit 6
+  fi
+
+  if [[ "$actual_sha256" != "$expected_sha256" ]]; then
+    echo "ERROR: SHA-256 mismatch for $file" >&2
+    echo "Expected: $expected_sha256" >&2
+    echo "Actual  : $actual_sha256" >&2
+    exit 7
+  fi
+
+  echo "  checksum verified; uploading to ADLS"
+  azcopy cp \
+    "$tmp_file" \
+    "$dest_url" \
+    --from-to=LocalBlob \
+    --overwrite=true \
+    --put-md5 \
+    --output-type=text
+
+  stored_md5="$(head_md5 "$dest_url" || true)"
+  if [[ "$stored_md5" != "$expected_md5_b64" ]]; then
+    echo "ERROR: destination Content-MD5 verification failed for $file" >&2
+    exit 8
+  fi
+
+  rm -f "$tmp_file"
+  tmp_file=""
+
+  echo "  uploaded to ADLS; MD5 verified"
   printf '%s,%s,%s,%s,%s,%s\n'     "$day" "$file" "$source_url" "$expected_md5_hex" "$expected_sha256" "copied_verified" >> "$manifest"
 
-  rm -f "$headers" "$body"
-  unset headers body
+
 done
 
 # Upload a small transfer manifest into the same scoped directory.
