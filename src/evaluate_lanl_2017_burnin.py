@@ -64,13 +64,7 @@ def evaluate(path: Path) -> dict[str, object]:
             if event.time >= EVAL_END:
                 break
 
-            row = extractor.transform(event)
-
-            if event.time < BURN_IN_END:
-                burnin_valid += 1
-                continue
-
-            if burnin_state is None:
+            if event.time >= BURN_IN_END and burnin_state is None:
                 burnin_state = {
                     "users_with_auth_history": len(extractor.user_success) + len(set(extractor.user_failure) - set(extractor.user_success)),
                     "user_host_sets": len(extractor.user_hosts),
@@ -78,6 +72,12 @@ def evaluate(path: Path) -> dict[str, object]:
                     "users_last_seen": len(extractor.user_last_seen),
                     "hosts_last_seen": len(extractor.host_last_seen),
                 }
+
+            row = extractor.transform(event)
+
+            if event.time < BURN_IN_END:
+                burnin_valid += 1
+                continue
 
             eval_valid += 1
             ids[event.event_id] += 1
