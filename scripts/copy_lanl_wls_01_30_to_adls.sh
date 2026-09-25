@@ -122,7 +122,11 @@ for day_num in $(seq 1 30); do
   dest_url="${BLOB_DIR_URL}/${file}?${SAS_QUERY}"
   expected_md5_hex="${MD5[$day]}"
   expected_sha256="${SHA256[$day]}"
-  expected_md5_b64="$(printf '%s' "$expected_md5_hex" | xxd -r -p | base64 | tr -d '\n')"
+  expected_md5_b64="$(python3 - "$expected_md5_hex" <<'PY'
+import base64, binascii, sys
+print(base64.b64encode(binascii.unhexlify(sys.argv[1])).decode("ascii"))
+PY
+)"
 
   echo "Day $day: $file"
 
