@@ -148,3 +148,31 @@ Next:
 2. Run a bounded LANL authentication experiment to obtain independently sourced identity/behavior distributions.
 3. Introduce a controlled benign-uncertainty lab experiment (e.g., legitimate authentication novelty or stale identity context) so guard-induced challenge burden can be measured rather than assumed.
 4. Add a resource-sensitivity/dynamic-threshold baseline only after the external identity distribution is available.
+
+
+## Day 6 — 2026-09-25 — Novelty boundary: score-based ZT access control
+
+Completed:
+- Re-inspected the repository before changing the research position.
+- Verified NIST SP 800-207 (DOI `10.6028/NIST.SP.800-207`), which explicitly makes device state and other contextual inputs part of dynamic access decisions; this remains architectural guidance rather than evidence that one endpoint trust algorithm is optimal.
+- Verified Junquera-Sánchez et al., *Security and Communication Networks* (2021), DOI `10.1155/2021/8146553`, a systematic review of continuous authentication. It reinforces that continuous confidence and multiple behavioral/data sources predate this project.
+- Verified Alshomrani and Li, *Wireless Communications and Mobile Computing* (2022), DOI `10.1155/2022/6367579`, which evaluates static plus continuous device authentication for IoT using PUF/location evidence. This is device-authentication evidence, not enterprise endpoint-posture validation.
+- Re-verified Ameer et al., *ACM Transactions on Privacy and Security* 27(3) (2024), DOI `10.1145/3671147`. Critically, that paper already proposes score-based Zero Trust authorization and explicitly leaves detailed score/threshold calculation algorithms for future work.
+- Re-verified Jeong and Yang, *Applied Sciences* 15(17):9551 (2025), DOI `10.3390/app15179551`. Their model already combines behavior, network, device, and threat-history factors; includes ALLOW/MFA/BLOCK thresholds; performs factor-weight sensitivity analysis; and reports large-scale computational benchmarking using UNSW-NB15/CICIDS2017-derived experiments.
+
+Research consequence:
+- The manuscript must **not** claim novelty for multidimensional weighted trust scoring, three-way allow/challenge/block decisions, factor-weight sensitivity analysis, or scalability benchmarking by themselves.
+- The strongest defensible contribution is now narrower: enterprise-managed endpoint decision robustness under **missing/stale evidence, cross-domain compensation, adversarially compliant states, abstention/STEP_UP behavior, and independent enterprise telemetry**, compared against both binary compliance and a published-style weighted trust-score baseline.
+- The forthcoming LANL experiment is therefore a gating milestone. Synthetic improvements remain diagnostics and must not be described as evidence of production security effectiveness.
+
+Limitations:
+- Today’s work is literature/positioning work; no new empirical result was generated.
+- LANL Windows authentication/logon telemetry cannot supply actual MDM compliance, patch, EDR coverage, or proprietary identity-risk scores. Any mapping must remain an explicit proxy, and genuinely unavailable dimensions must remain missing rather than imputed as healthy.
+- IoT evidence is relevant to continuous/device trust concepts but is not direct evidence for enterprise-managed Windows endpoints.
+
+Next:
+1. Complete and checksum the bounded LANL WLS ingest already being prepared.
+2. Freeze a preregistered external-validation protocol before examining labeled outcomes: fixed feature windows, temporal split, no future-event leakage, fixed baselines, and predefined primary metrics.
+3. Compare binary compliance proxy, current explainable model, and a Jeong/Yang-style weighted score under identical evidence availability.
+4. Report per-scenario/attack-family false-ALLOW, STEP_UP coverage, safe-user friction, confidence intervals, and missingness sensitivity.
+5. Do not select an IEEE venue until external validation and the contribution boundary are stable.
