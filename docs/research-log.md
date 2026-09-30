@@ -176,3 +176,33 @@ Next:
 3. Compare binary compliance proxy, current explainable model, and a Jeong/Yang-style weighted score under identical evidence availability.
 4. Report per-scenario/attack-family false-ALLOW, STEP_UP coverage, safe-user friction, confidence intervals, and missingness sensitivity.
 5. Do not select an IEEE venue until external validation and the contribution boundary are stable.
+
+
+## Day 7 — 2026-09-30 — Bounded LANL-2015 cohort preparation from Hugging Face
+
+Completed:
+- Inspected the current repository state and recent research commits before implementation.
+- Re-verified the LANL Comprehensive Multi-Source Cyber-Security Events dataset description: 58 consecutive days, five aligned event sources, 1,648,275,307 total events, and a red-team file containing specific known malicious authentication events.
+- Adopted the user-hosted Hugging Face mirror `Taqui/lanl-cyber-datasets` as the operational data source while retaining LANL as the authoritative provenance/citation source.
+- Added `src/prepare_lanl2015_remote.py`. It inventories the mirror, downloads only the small `lanl-2015/redteam.txt` label file, validates its schema, records duplicate labels, and emits merged temporal windows plus implicated users/computers for bounded extraction.
+- Added `tests/test_prepare_lanl2015_remote.py`.
+- Locally ran the focused tests before committing: 4/4 passed. `py_compile` also passed.
+- The code explicitly prevents a surrounding-window event from being relabeled as malicious merely because it is temporally close to a known red-team authentication.
+
+Research consequence:
+- The 444-GB extracted mirror does not need to fit in a local research sandbox. The next data pass can be driven by the cohort manifest and use remote/partitioned reads.
+- Red-team events are limited ground truth for specific malicious authentication events. Surrounding authentication, process, DNS, or flow records are contextual evidence and must not be treated as attack labels without independent justification.
+- The external experiment remains proxy validation on independently sourced enterprise telemetry; LANL does not contain actual MDM compliance, EDR health, patch posture, or proprietary identity-risk scores.
+
+Limitations:
+- This step prepares the cohort but does not yet report a model-performance result.
+- The execution container could not resolve `github.com` or Hugging Face directly, so the live Hugging Face inventory/manifest generation could not be executed here. GitHub repository reads/writes were performed through the connected GitHub integration.
+- Repository-wide tests were therefore not claimed; only the new focused module/tests were executed locally in isolation.
+- Mirror upload is still in progress, so missing mirror files must be interpreted as upload state until the inventory confirms otherwise.
+
+Next:
+1. Run the cohort-preparation command where Hugging Face network access is available and commit the generated inventory/manifest metadata (not raw telemetry).
+2. Use the resulting windows/entities to extract bounded authentication context first, preserving exact red-team labels.
+3. Add matched benign temporal/entity controls without future-event leakage.
+4. Derive transparent authentication novelty/failure/history proxy features and freeze the temporal split before evaluating outcomes.
+5. Only then compare binary compliance proxy, published-style weighted trust, and the explainable framework under identical evidence availability.
