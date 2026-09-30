@@ -91,7 +91,8 @@ def mcnemar_continuity_corrected(
     if discordant == 0:
         return McNemarResult(first_only, second_only, 0, 0.0, 1.0)
 
-    corrected_difference = max(abs(first_only - second_only) - 1.0, 0.0)\n    chi_square = corrected_difference ** 2 / discordant
+    corrected_difference = max(abs(first_only - second_only) - 1.0, 0.0)
+    chi_square = corrected_difference ** 2 / discordant
     # A chi-square variable with one degree of freedom has survival function
     # erfc(sqrt(x / 2)), avoiding a SciPy dependency.
     p_value = math.erfc(math.sqrt(chi_square / 2.0))
@@ -205,7 +206,8 @@ def main() -> None:
     )
 
     for policy, metrics in result["metrics"].items():
-        print(f"\n{policy}")
+        print(f"
+{policy}")
         print(f"  false ALLOW:       {_format_rate(metrics['false_allow'])}")
         print(f"  safe STEP_UP:      {_format_rate(metrics['safe_step_up'])}")
         print(
@@ -213,7 +215,8 @@ def main() -> None:
             f"{_format_rate(metrics['ordinary_access_accuracy'])}"
         )
 
-    print("\nPaired McNemar comparisons")
+    print("
+Paired McNemar comparisons")
     for name, comparison in result["comparisons"].items():
         p_text = f"{comparison.p_value:.3g}" if comparison.p_value > 0.0 else "<1e-300"
         print(
