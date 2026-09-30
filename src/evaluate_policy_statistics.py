@@ -206,8 +206,7 @@ def main() -> None:
     )
 
     for policy, metrics in result["metrics"].items():
-        print(f"
-{policy}")
+        print(f"\n{policy}")
         print(f"  false ALLOW:       {_format_rate(metrics['false_allow'])}")
         print(f"  safe STEP_UP:      {_format_rate(metrics['safe_step_up'])}")
         print(
@@ -215,8 +214,7 @@ def main() -> None:
             f"{_format_rate(metrics['ordinary_access_accuracy'])}"
         )
 
-    print("
-Paired McNemar comparisons")
+    print("\nPaired McNemar comparisons")
     for name, comparison in result["comparisons"].items():
         p_text = f"{comparison.p_value:.3g}" if comparison.p_value > 0.0 else "<1e-300"
         print(
