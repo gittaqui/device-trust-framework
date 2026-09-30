@@ -9,3 +9,6 @@ paper/*.pdf
 
 # External LANL raw data (large/provider-hosted)
 data/external/lanl-2017/raw/
+
+# LANL-2015 derived/external data are generated in CI and kept as artifacts
+data/external/lanl-2015/
