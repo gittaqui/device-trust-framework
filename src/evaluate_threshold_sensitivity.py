@@ -29,6 +29,11 @@ SIGNALS = (
 )
 
 
+def _rate(numerator: int, denominator: int) -> float:
+    """Return a proportion, or NaN when the population is empty."""
+    return numerator / denominator if denominator else float("nan")
+
+
 def evaluate_threshold(
     input_path: Path,
     *,
@@ -72,10 +77,10 @@ def evaluate_threshold(
         "step_up_threshold": step_up_threshold,
         "safe": counts["safe"],
         "unsafe": counts["unsafe"],
-        "false_allow_rate": counts["false_allow"] / counts["unsafe"],
-        "false_deny_rate": counts["false_deny"] / counts["safe"],
-        "safe_step_up_rate": counts["safe_step_up"] / counts["safe"],
-        "safe_allow_rate": counts["safe_allow"] / counts["safe"],
+        "false_allow_rate": _rate(counts["false_allow"], counts["unsafe"]),
+        "false_deny_rate": _rate(counts["false_deny"], counts["safe"]),
+        "safe_step_up_rate": _rate(counts["safe_step_up"], counts["safe"]),
+        "safe_allow_rate": _rate(counts["safe_allow"], counts["safe"]),
     }
 
     per_scenario: dict[str, dict[str, float | int]] = {}
