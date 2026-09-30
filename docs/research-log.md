@@ -206,3 +206,39 @@ Next:
 3. Add matched benign temporal/entity controls without future-event leakage.
 4. Derive transparent authentication novelty/failure/history proxy features and freeze the temporal split before evaluating outcomes.
 5. Only then compare binary compliance proxy, published-style weighted trust, and the explainable framework under identical evidence availability.
+
+
+## Day 8 — 2026-09-30 — Live bounded LANL-2015 external-context extraction
+
+Completed:
+- Added `src/extract_lanl_auth_remote.py`, which uses fail-closed HTTP byte-range reads plus timestamp-directed seeking so large time-sorted telemetry can be sampled without materializing the full file. Exact red-team tuples are the only authentication rows eligible for a red-team label.
+- Added `src/extract_lanl_context_remote.py` for process, DNS, and flow context. These rows are explicitly emitted as `context_only=1`; temporal or entity proximity does not create an attack label.
+- Added deterministic tests for range seeking, schema handling, exact-label semantics, context-only semantics, and bounded-window extraction. The focused LANL suite passed 10/10 in GitHub Actions.
+- Added `.github/workflows/lanl-bounded-extract.yml` and executed it against the live Hugging Face mirror.
+- Live mirror inventory contained 60 files total and 8 under `lanl-2015/`: process, DNS, flow, and red-team files in both plain-text and gzip form. `lanl-2015/auth.txt` was not yet present.
+- Verified 749 red-team rows in the mirror. Selected the first 25 labels under a fixed ±600-second protocol, yielding eight merged temporal windows.
+- Streamed the available remote telemetry via bounded byte ranges. Process extraction scanned 1,048,339 records and retained 4,561 focus-entity records; DNS scanned 10,602 and retained 129; flow scanned 1,452,153 and retained 9,333.
+- Verified all retained process/DNS/flow rows remained `context_only=1`, fell inside the predefined temporal windows, and contained no exact duplicate output rows.
+- Recorded the workflow summary in `results/lanl-2015-context-summary.json` and the descriptive analysis in `results/lanl-2015-context-coverage.md`.
+
+Descriptive external-telemetry observations:
+- The first 25 selected labels involved 5 unique users and 16 unique computers.
+- Process context matched 25/25 selected labels; the median retained count was 38 rows per selected label, and the median nearest-event distance among covered labels was 2 seconds.
+- Flow context matched 22/25 selected labels; the median retained count was 135 rows per selected label, and the median nearest-event distance among covered labels was 1.5 seconds.
+- DNS context matched 3/25 selected labels; the overall median retained count was zero, while the median among covered labels was 5 rows and the median nearest-event distance was 11 seconds.
+- These are descriptive observations about independently sourced enterprise telemetry. They are not classifier performance, causal evidence, or production security-effectiveness claims.
+
+Limitations:
+- The cohort is conditioned on the first 25 known red-team authentication events and implicated entities. It is not representative of the full 749-label set or ordinary enterprise traffic.
+- Matched benign controls have not yet been constructed.
+- Process, DNS, and flow records do not carry malicious ground truth in this experiment.
+- `auth.txt` is still absent from the mirror, so the planned authentication-derived external baseline could not run.
+- LANL does not provide actual MDM compliance, EDR health, patch posture, or proprietary identity-risk scores; this remains proxy evidence.
+- No trust-model threshold or weight was tuned from these external outcomes.
+
+Next:
+1. Freeze and implement a matched benign-control protocol using only pre-outcome information and the same time-window geometry.
+2. Derive transparent process/flow/DNS context features for red-team-centered and matched benign cohorts.
+3. Keep model weights and thresholds frozen during external evaluation.
+4. Add authentication-derived features only after `auth.txt` appears in the mirror.
+5. Expand beyond the first 25 labels only after the control-selection and feature protocols are fixed, then report uncertainty and temporal-stratum results.
