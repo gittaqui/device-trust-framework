@@ -1,0 +1,89 @@
+name: Bounded LANL Hugging Face extraction
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/extract_lanl_auth_remote.py"
+      - "tests/test_extract_lanl_auth_remote.py"
+      - ".github/workflows/lanl-bounded-extract.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bounded-extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run focused LANL tests
+        run: python -m unittest discover -s tests -p "test_*lanl*remote.py" -v
+
+      - name: Install Hugging Face client
+        run: python -m pip install --disable-pip-version-check "huggingface_hub>=0.25,<2"
+
+      - name: Inventory mirror and prepare labels
+        id: inventory
+        shell: bash
+        run: |
+          python src/prepare_lanl2015_remote.py             --output data/external/lanl-2015/cohort-manifest.json             --inventory-output data/external/lanl-2015/hf-inventory.json             --before-seconds 600             --after-seconds 600
+
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          p = Path("data/external/lanl-2015/hf-inventory.json")
+          inventory = json.loads(p.read_text())
+          files = inventory["files"]
+          auth_ready = "lanl-2015/auth.txt" in files
+          print(f"HF_FILE_COUNT={len(files)}")
+          print(f"LANL_2015_FILE_COUNT={len(inventory['lanl_2015_files'])}")
+          print(f"AUTH_READY={str(auth_ready).lower()}")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write(f"auth_ready={str(auth_ready).lower()}\n")
+          PY
+
+      - name: Extract first bounded authentication cohort
+        if: steps.inventory.outputs.auth_ready == 'true'
+        run: |
+          python src/extract_lanl_auth_remote.py             --repo-id Taqui/lanl-cyber-datasets             --auth-path lanl-2015/auth.txt             --redteam-path lanl-2015/redteam.txt             --label-limit 25             --before-seconds 600             --after-seconds 600             --output data/external/lanl-2015/auth-bounded.csv             --summary results/lanl-2015-bounded-extraction-summary.json
+
+      - name: Record pending auth upload
+        if: steps.inventory.outputs.auth_ready != 'true'
+        run: |
+          mkdir -p results
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          payload = {
+              "status": "pending",
+              "reason": "lanl-2015/auth.txt is not yet present in the Hugging Face mirror inventory",
+              "research_claim": "No authentication extraction or empirical result was produced."
+          }
+          Path("results/lanl-2015-bounded-extraction-summary.json").write_text(
+              json.dumps(payload, indent=2) + "\n", encoding="utf-8"
+          )
+          print(json.dumps(payload, indent=2))
+          PY
+
+      - name: Upload bounded research artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lanl-2015-bounded-extraction
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            data/external/lanl-2015/hf-inventory.json
+            data/external/lanl-2015/cohort-manifest.json
+            data/external/lanl-2015/auth-bounded.csv
+            results/lanl-2015-bounded-extraction-summary.json
