@@ -31,7 +31,7 @@ jobs:
 
       - name: Run repository test suite
         env:
-          PYTHONPATH: src
+          PYTHONPATH: .:src
         run: pytest -q
 
       - name: Inventory mirror and prepare labels
