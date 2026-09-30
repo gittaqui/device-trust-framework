@@ -91,7 +91,7 @@ def mcnemar_continuity_corrected(
     if discordant == 0:
         return McNemarResult(first_only, second_only, 0, 0.0, 1.0)
 
-    chi_square = (abs(first_only - second_only) - 1.0) ** 2 / discordant
+    corrected_difference = max(abs(first_only - second_only) - 1.0, 0.0)\n    chi_square = corrected_difference ** 2 / discordant
     # A chi-square variable with one degree of freedom has survival function
     # erfc(sqrt(x / 2)), avoiding a SciPy dependency.
     p_value = math.erfc(math.sqrt(chi_square / 2.0))
