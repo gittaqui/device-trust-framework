@@ -28,7 +28,7 @@ def fit_nominal(train_rows=30_000, calibration_rows=10_000):
     p_cal = model.predict_proba(x_cal)[:, 1]
 
     trust_threshold = calibrate_threshold(
-        lambda t: trust_allow(x_cal, t), y_cal, np.linspace(0.50, 0.999, 500)
+        lambda t: trust_allow(x_cal, t), y_cal, np.linspace(0.55, 0.999, 450)
     )
     learned_threshold = calibrate_threshold(
         lambda t: p_cal >= t,
