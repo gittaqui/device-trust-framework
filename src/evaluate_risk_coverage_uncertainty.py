@@ -39,7 +39,7 @@ def wilson_interval(successes: int, trials: int, confidence: float = 0.95) -> tu
         * math.sqrt(p * (1.0 - p) / trials + z2 / (4.0 * trials * trials))
         / denominator
     )
-    return max(0.0, center - half_width), min(1.0, center + half_width)
+    low = 0.0 if successes == 0 else max(0.0, center - half_width)\n    high = 1.0 if successes == trials else min(1.0, center + half_width)\n    return low, high
 
 
 def _signals(row: dict[str, object]) -> dict[str, float]:
