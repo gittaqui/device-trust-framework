@@ -73,7 +73,7 @@ def evaluate_condition(rho: float, overlap: float, train_rows=30_000, calibratio
     p_test = model.predict_proba(x_test)[:, 1]
 
     trust_threshold = calibrate_threshold(
-        lambda t: trust_allow(x_cal, t), y_cal, np.linspace(0.50, 0.999, 500)
+        lambda t: trust_allow(x_cal, t), y_cal, np.linspace(0.55, 0.999, 450)
     )
     probability_thresholds = np.unique(np.quantile(p_cal, np.linspace(0.0, 1.0, 501)))
     learned_threshold = calibrate_threshold(lambda t: p_cal >= t, y_cal, probability_thresholds)
