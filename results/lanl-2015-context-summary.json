@@ -1,0 +1,48 @@
+{
+  "dataset": "LANL Comprehensive Multi-Source Cyber-Security Events (2015)",
+  "authoritative_doi": "10.17021/1179829",
+  "mirror_repo": "Taqui/lanl-cyber-datasets",
+  "label_rows_available": 749,
+  "label_rows_selected": 25,
+  "window_before_seconds": 600,
+  "window_after_seconds": 600,
+  "merged_window_count": 8,
+  "merged_windows": [
+    [150285, 152593],
+    [153192, 154392],
+    [154619, 157258],
+    [209486, 210912],
+    [217818, 219018],
+    [226452, 229646],
+    [229795, 230995],
+    [234067, 235267]
+  ],
+  "sources": {
+    "proc": {
+      "source": "proc",
+      "path": "lanl-2015/proc.txt",
+      "remote_size_bytes": 15397551964,
+      "events_scanned_in_windows": 1048339,
+      "events_retained_for_focus_entities": 4561,
+      "label_semantics": "No attack label assigned; records are context only."
+    },
+    "dns": {
+      "source": "dns",
+      "path": "lanl-2015/dns.txt",
+      "remote_size_bytes": 812736592,
+      "events_scanned_in_windows": 10602,
+      "events_retained_for_focus_entities": 129,
+      "label_semantics": "No attack label assigned; records are context only."
+    },
+    "flows": {
+      "source": "flows",
+      "path": "lanl-2015/flows.txt",
+      "remote_size_bytes": 5237189507,
+      "events_scanned_in_windows": 1452153,
+      "events_retained_for_focus_entities": 9333,
+      "label_semantics": "No attack label assigned; records are context only."
+    }
+  },
+  "ground_truth_warning": "Process, DNS, and flow rows are contextual telemetry only. Window/entity membership does not make them malicious ground truth.",
+  "evidence_scope": "Independent enterprise telemetry/proxy evidence; not actual MDM compliance, patch, EDR health, or proprietary identity-risk evidence."
+}
