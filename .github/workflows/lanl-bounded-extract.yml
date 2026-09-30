@@ -26,8 +26,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Run focused LANL tests
-        run: python -m unittest discover -s tests -p "test_*lanl*remote.py" -v
+      - name: Run repository test suite
+        run: python -m unittest discover -s tests -v
 
       - name: Install Hugging Face client
         run: python -m pip install --disable-pip-version-check "huggingface_hub>=0.25,<2"
