@@ -4,10 +4,9 @@ on:
   push:
     branches: [main]
     paths:
-      - "src/extract_lanl_auth_remote.py"
-      - "src/extract_lanl_context_remote.py"
-      - "tests/test_extract_lanl_auth_remote.py"
-      - "tests/test_extract_lanl_context_remote.py"
+      - "src/**/*.py"
+      - "tests/**/*.py"
+      - "requirements.txt"
       - ".github/workflows/lanl-bounded-extract.yml"
   workflow_dispatch:
 
