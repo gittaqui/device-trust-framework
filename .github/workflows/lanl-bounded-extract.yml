@@ -5,7 +5,9 @@ on:
     branches: [main]
     paths:
       - "src/extract_lanl_auth_remote.py"
+      - "src/extract_lanl_context_remote.py"
       - "tests/test_extract_lanl_auth_remote.py"
+      - "tests/test_extract_lanl_context_remote.py"
       - ".github/workflows/lanl-bounded-extract.yml"
   workflow_dispatch:
 
@@ -34,7 +36,7 @@ jobs:
         id: inventory
         shell: bash
         run: |
-          python src/prepare_lanl2015_remote.py             --output data/external/lanl-2015/cohort-manifest.json             --inventory-output data/external/lanl-2015/hf-inventory.json             --before-seconds 600             --after-seconds 600
+          python src/prepare_lanl2015_remote.py --output data/external/lanl-2015/cohort-manifest.json --inventory-output data/external/lanl-2015/hf-inventory.json --before-seconds 600 --after-seconds 600
 
           python - <<'PY'
           import json
@@ -47,15 +49,18 @@ jobs:
           auth_ready = "lanl-2015/auth.txt" in files
           print(f"HF_FILE_COUNT={len(files)}")
           print(f"LANL_2015_FILE_COUNT={len(inventory['lanl_2015_files'])}")
+          print(f"LANL_2015_FILES={inventory['lanl_2015_files']}")
           print(f"AUTH_READY={str(auth_ready).lower()}")
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
               out.write(f"auth_ready={str(auth_ready).lower()}\n")
           PY
 
+      - name: Extract bounded process DNS and flow context
+        run: python src/extract_lanl_context_remote.py --repo-id Taqui/lanl-cyber-datasets --redteam-path lanl-2015/redteam.txt --label-limit 25 --before-seconds 600 --after-seconds 600 --output-dir data/external/lanl-2015/context --summary results/lanl-2015-context-summary.json
+
       - name: Extract first bounded authentication cohort
         if: steps.inventory.outputs.auth_ready == 'true'
-        run: |
-          python src/extract_lanl_auth_remote.py             --repo-id Taqui/lanl-cyber-datasets             --auth-path lanl-2015/auth.txt             --redteam-path lanl-2015/redteam.txt             --label-limit 25             --before-seconds 600             --after-seconds 600             --output data/external/lanl-2015/auth-bounded.csv             --summary results/lanl-2015-bounded-extraction-summary.json
+        run: python src/extract_lanl_auth_remote.py --repo-id Taqui/lanl-cyber-datasets --auth-path lanl-2015/auth.txt --redteam-path lanl-2015/redteam.txt --label-limit 25 --before-seconds 600 --after-seconds 600 --output data/external/lanl-2015/auth-bounded.csv --summary results/lanl-2015-bounded-extraction-summary.json
 
       - name: Record pending auth upload
         if: steps.inventory.outputs.auth_ready != 'true'
@@ -67,7 +72,7 @@ jobs:
           payload = {
               "status": "pending",
               "reason": "lanl-2015/auth.txt is not yet present in the Hugging Face mirror inventory",
-              "research_claim": "No authentication extraction or empirical result was produced."
+              "research_claim": "No authentication extraction or empirical authentication result was produced."
           }
           Path("results/lanl-2015-bounded-extraction-summary.json").write_text(
               json.dumps(payload, indent=2) + "\n", encoding="utf-8"
@@ -86,4 +91,6 @@ jobs:
             data/external/lanl-2015/hf-inventory.json
             data/external/lanl-2015/cohort-manifest.json
             data/external/lanl-2015/auth-bounded.csv
+            data/external/lanl-2015/context/*.csv
             results/lanl-2015-bounded-extraction-summary.json
+            results/lanl-2015-context-summary.json
