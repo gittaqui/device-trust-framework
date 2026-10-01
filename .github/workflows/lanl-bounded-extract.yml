@@ -16,7 +16,7 @@ permissions:
 jobs:
   bounded-extract:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - uses: actions/checkout@v4
@@ -62,6 +62,9 @@ jobs:
       - name: Extract bounded process DNS and flow context
         run: python src/extract_lanl_context_remote.py --repo-id Taqui/lanl-cyber-datasets --redteam-path lanl-2015/redteam.txt --label-limit 25 --before-seconds 600 --after-seconds 600 --output-dir data/external/lanl-2015/context --summary results/lanl-2015-context-summary.json
 
+      - name: Extract frozen paired target and control features
+        run: python src/extract_lanl_paired_context_remote.py --repo-id Taqui/lanl-cyber-datasets --redteam-path lanl-2015/redteam.txt --control-manifest data/external/lanl-2015/matched-control-manifest.json --label-limit 25 --radius-seconds 600 --output data/external/lanl-2015/paired-context-features.csv --summary results/lanl-2015-paired-context-summary.json
+
       - name: Extract first bounded authentication cohort
         if: steps.inventory.outputs.auth_ready == 'true'
         run: python src/extract_lanl_auth_remote.py --repo-id Taqui/lanl-cyber-datasets --auth-path lanl-2015/auth.txt --redteam-path lanl-2015/redteam.txt --label-limit 25 --before-seconds 600 --after-seconds 600 --output data/external/lanl-2015/auth-bounded.csv --summary results/lanl-2015-bounded-extraction-summary.json
@@ -97,5 +100,7 @@ jobs:
             data/external/lanl-2015/matched-control-manifest.json
             data/external/lanl-2015/auth-bounded.csv
             data/external/lanl-2015/context/*.csv
+            data/external/lanl-2015/paired-context-features.csv
             results/lanl-2015-bounded-extraction-summary.json
             results/lanl-2015-context-summary.json
+            results/lanl-2015-paired-context-summary.json
