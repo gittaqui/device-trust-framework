@@ -275,3 +275,54 @@ Next:
 2. Extract process/DNS/flow telemetry for the frozen control windows using the identical focus-entity filter.
 3. Define context features without looking at target/control differences, then run paired descriptive comparisons with uncertainty reported by temporal stratum.
 4. Add authentication-derived features only after `auth.txt` is present.
+
+
+## Day 10 — 2026-09-30 — Paired LANL process/DNS/flow comparison
+
+Completed:
+- Confirmed the frozen matched non-red-team selector in GitHub Actions and generated 24 matched controls for the first 25 red-team targets; one target remained unmatched and was retained rather than replaced.
+- Froze the first paired feature set in `experiments/lanl-2015-paired-feature-freeze.md` before computing target/control differences.
+- Added `src/extract_lanl_paired_context_remote.py` and `tests/test_extract_lanl_paired_context_remote.py`.
+- Changed the paired analysis to use each target's own user/source/destination-computer entity set instead of the union of all target entities.
+- Ran the full repository suite in CI: 100 tests passed.
+- Executed the live paired extraction against the Hugging Face LANL mirror and recorded `results/lanl-2015-paired-context-summary.json` plus `results/lanl-2015-paired-context-results.md`.
+- Re-verified that `lanl-2015/auth.txt` is still absent from the mirror; authentication-derived external validation remains blocked.
+
+Frozen paired descriptive findings:
+- Process event count: target median 37.5 vs control 9.0; median paired difference +21.5; target higher in 21/24 matched pairs.
+- Unique process count: 13.0 vs 4.5; median paired difference +7.0; target higher in 22/24 pairs.
+- Process starts: 28.0 vs 7.5; median paired difference +16.5; target higher in 20/24 pairs.
+- DNS remained sparse: median event count 0 on both sides; 22/24 pairs were tied on DNS event count.
+- Flow event count: 179 vs 120; median paired difference +115.5; target higher in 17/24 pairs.
+- Flow unique-port count: 176.5 vs 121.5; target higher in 17/24 pairs.
+- Flow byte count: 105,462 vs 71,471; target higher in 17/24 pairs.
+
+Exploratory temporal-stratum diagnostic:
+- The process difference remained directionally positive across the populated offset strata.
+- Flow differences were not stable across offsets. For the ten +1-day controls, median flow-event difference was only +8, while +2/+3-day strata were much larger and the two +7-day pairs were mixed.
+- Because this stratum check was performed after the first paired results were observed, it is diagnostic only and cannot become a confirmatory claim on this cohort.
+
+Fresh methodological context:
+- A 2026 IEEE intrusion-detection dataset audit, DOI `10.1109/IMNS67862.2026.11655312`, identifies temporal concentration and node-identity leakage as mechanisms that can inflate evaluation results and recommends attack-aware chronological evaluation.
+- A 2026 IEEE Access study, DOI `10.1109/ACCESS.2026.3688204`, shows that temporal NetFlow structure materially affects intrusion-detection behavior. This reinforces treating the offset-sensitive flow result cautiously.
+
+Research consequence:
+- Process activity is the strongest candidate external contextual signal from this first matched cohort.
+- Flow-volume/diversity features remain secondary until tested under stricter temporal matching.
+- DNS is not useful in this first pair-specific cohort.
+- No trust-model threshold, weight, or classifier was tuned from these 24 pairs.
+
+Limitations:
+- Controls are unlabeled non-red-team times, not verified benign sessions.
+- The first 25 labels form a small, early red-team cohort and are not representative of all 749 labels.
+- Matching preserves approximate time-of-day but often changes day-of-week and workload context.
+- The paired scan is currently range-seek heavy and should be optimized before scaling to hundreds of labels.
+- No sensitivity, specificity, false-positive rate, AUC, causal effect, or production-effectiveness claim is supported.
+- LANL process/DNS/flow data do not represent MDM compliance, patch posture, EDR health, or proprietary identity-risk ground truth.
+
+Next:
+1. Freeze an untouched second cohort (labels 26-50) before inspecting its telemetry.
+2. Use same-weekday/time-of-day controls based on fixed 7-day multiples so the first-cohort workload/offset concern is directly tested.
+3. Reuse the exact same 13 frozen features; make process activity the primary confirmation target and flow features secondary.
+4. Optimize paired range extraction before scaling beyond the second cohort.
+5. Add authentication-derived features only after `auth.txt` appears in the mirror.
