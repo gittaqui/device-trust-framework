@@ -56,6 +56,9 @@ jobs:
               out.write(f"auth_ready={str(auth_ready).lower()}\n")
           PY
 
+      - name: Generate frozen matched non-red-team controls
+        run: python src/select_lanl2015_controls.py --label-limit 25 --radius-seconds 600 --output data/external/lanl-2015/matched-control-manifest.json
+
       - name: Extract bounded process DNS and flow context
         run: python src/extract_lanl_context_remote.py --repo-id Taqui/lanl-cyber-datasets --redteam-path lanl-2015/redteam.txt --label-limit 25 --before-seconds 600 --after-seconds 600 --output-dir data/external/lanl-2015/context --summary results/lanl-2015-context-summary.json
 
@@ -91,6 +94,7 @@ jobs:
           path: |
             data/external/lanl-2015/hf-inventory.json
             data/external/lanl-2015/cohort-manifest.json
+            data/external/lanl-2015/matched-control-manifest.json
             data/external/lanl-2015/auth-bounded.csv
             data/external/lanl-2015/context/*.csv
             results/lanl-2015-bounded-extraction-summary.json
