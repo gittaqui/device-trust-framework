@@ -1,0 +1,42 @@
+{
+  "dataset": "LANL Comprehensive Multi-Source Cyber-Security Events (2015)",
+  "authoritative_doi": "10.17021/1179829",
+  "mirror_repo": "Taqui/lanl-cyber-datasets",
+  "target_label_count": 25,
+  "matched_pair_count": 24,
+  "unmatched_pair_count": 1,
+  "radius_seconds": 600,
+  "feature_freeze": "experiments/lanl-2015-paired-feature-freeze.md",
+  "frozen_features": [
+    "proc_event_count",
+    "proc_unique_process_count",
+    "proc_start_count",
+    "proc_end_count",
+    "dns_event_count",
+    "dns_unique_resolved_computer_count",
+    "flow_event_count",
+    "flow_unique_peer_computer_count",
+    "flow_unique_port_count",
+    "flow_packet_count_sum",
+    "flow_byte_count_sum",
+    "flow_duration_sum",
+    "flow_numeric_complete_count"
+  ],
+  "descriptive_features": {
+    "proc_event_count": {"matched_pairs": 24, "target_median": 37.5, "control_median": 9.0, "median_paired_difference": 21.5, "target_greater_pairs": 21, "equal_pairs": 0, "control_greater_pairs": 3},
+    "proc_unique_process_count": {"matched_pairs": 24, "target_median": 13.0, "control_median": 4.5, "median_paired_difference": 7.0, "target_greater_pairs": 22, "equal_pairs": 0, "control_greater_pairs": 2},
+    "proc_start_count": {"matched_pairs": 24, "target_median": 28.0, "control_median": 7.5, "median_paired_difference": 16.5, "target_greater_pairs": 20, "equal_pairs": 1, "control_greater_pairs": 3},
+    "proc_end_count": {"matched_pairs": 24, "target_median": 2.0, "control_median": 0.0, "median_paired_difference": 0.5, "target_greater_pairs": 12, "equal_pairs": 11, "control_greater_pairs": 1},
+    "dns_event_count": {"matched_pairs": 24, "target_median": 0.0, "control_median": 0.0, "median_paired_difference": 0.0, "target_greater_pairs": 1, "equal_pairs": 22, "control_greater_pairs": 1},
+    "dns_unique_resolved_computer_count": {"matched_pairs": 24, "target_median": 0.0, "control_median": 0.0, "median_paired_difference": 0.0, "target_greater_pairs": 0, "equal_pairs": 23, "control_greater_pairs": 1},
+    "flow_event_count": {"matched_pairs": 24, "target_median": 179.0, "control_median": 120.0, "median_paired_difference": 115.5, "target_greater_pairs": 17, "equal_pairs": 3, "control_greater_pairs": 4},
+    "flow_unique_peer_computer_count": {"matched_pairs": 24, "target_median": 1.5, "control_median": 1.0, "median_paired_difference": 0.0, "target_greater_pairs": 10, "equal_pairs": 12, "control_greater_pairs": 2},
+    "flow_unique_port_count": {"matched_pairs": 24, "target_median": 176.5, "control_median": 121.5, "median_paired_difference": 97.5, "target_greater_pairs": 17, "equal_pairs": 3, "control_greater_pairs": 4},
+    "flow_packet_count_sum": {"matched_pairs": 24, "target_median": 1066.5, "control_median": 730.0, "median_paired_difference": 404.5, "target_greater_pairs": 16, "equal_pairs": 3, "control_greater_pairs": 5},
+    "flow_byte_count_sum": {"matched_pairs": 24, "target_median": 105462.0, "control_median": 71471.0, "median_paired_difference": 69780.5, "target_greater_pairs": 17, "equal_pairs": 3, "control_greater_pairs": 4},
+    "flow_duration_sum": {"matched_pairs": 24, "target_median": 5.5, "control_median": 5.5, "median_paired_difference": 1.0, "target_greater_pairs": 13, "equal_pairs": 6, "control_greater_pairs": 5},
+    "flow_numeric_complete_count": {"matched_pairs": 24, "target_median": 179.0, "control_median": 120.0, "median_paired_difference": 115.5, "target_greater_pairs": 17, "equal_pairs": 3, "control_greater_pairs": 4}
+  },
+  "control_semantics": "matched non-red-team temporal controls; unlabeled and not verified benign",
+  "claim_boundary": "Descriptive paired external-telemetry comparison only. Not sensitivity, specificity, false-positive rate, causal effect, or production security effectiveness."
+}
