@@ -242,3 +242,36 @@ Next:
 3. Keep model weights and thresholds frozen during external evaluation.
 4. Add authentication-derived features only after `auth.txt` appears in the mirror.
 5. Expand beyond the first 25 labels only after the control-selection and feature protocols are fixed, then report uncertainty and temporal-stratum results.
+
+
+## Day 9 — 2026-09-30 — Frozen matched non-red-team control protocol
+
+Completed:
+- Inspected the existing external-validation freeze, live LANL-2015 context extraction, remote range readers, workflow, and prior research log before changing the study.
+- Re-verified the authoritative LANL 2015 dataset semantics and DOI `10.17021/1179829`: red-team rows are specific known malicious authentication events; unlabeled surrounding telemetry is not independently established benign traffic.
+- Froze `experiments/lanl-2015-matched-control-freeze.md` before comparative target/control feature analysis.
+- Replaced the potentially misleading phrase "matched benign controls" with **matched non-red-team temporal controls**.
+- Added `src/select_lanl2015_controls.py`, which deterministically tests fixed +/-1, 2, 3, and 7 day offsets, excludes windows overlapping any known red-team timestamp, prevents control/control overlap, and never consults process/DNS/flow outcomes.
+- Added `tests/test_select_lanl2015_controls.py` covering deterministic first-choice behavior, red-team overlap exclusion, control/control separation, claim semantics, and fail-closed radius validation.
+- Updated the bounded LANL workflow to generate and retain the frozen control manifest before subsequent extraction.
+
+Research consequence:
+- Comparative external analysis now has an auditable control-selection rule fixed before target/control feature differences are examined.
+- A zero-event control is retained rather than replaced, preventing outcome-dependent sampling.
+- Absence from `redteam.txt` is explicitly not treated as a benign label; therefore false-positive-rate claims remain prohibited at this stage.
+
+Verification:
+- GitHub writes completed successfully through the connected repository integration.
+- The execution container could not resolve `github.com`, so an independent local clone/test run was not possible in this session.
+- The workflow is configured to run the repository pytest suite on Python source/test changes and now generates the control manifest. No passing CI result is claimed here until GitHub reports one for the new commits.
+
+Limitations:
+- Time-shift matching approximately preserves time-of-day but does not guarantee equivalent weekday, workload, or entity activity.
+- Controls remain unlabeled except for exclusion of known red-team timestamps.
+- Authentication telemetry is still unavailable in the mirror according to the last completed live inventory; process/DNS/flow context alone cannot validate the full device-trust model.
+
+Next:
+1. Confirm CI for the frozen selector and inspect the generated control manifest.
+2. Extract process/DNS/flow telemetry for the frozen control windows using the identical focus-entity filter.
+3. Define context features without looking at target/control differences, then run paired descriptive comparisons with uncertainty reported by temporal stratum.
+4. Add authentication-derived features only after `auth.txt` is present.
