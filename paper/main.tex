@@ -24,8 +24,9 @@ endpoint scenarios, including benign, degraded, stale, identity-risk, compromise
 and adversarially compliant cases. The study evaluates false-allow rates, false-deny
 and step-up behavior, sensitivity to weights and thresholds, missing telemetry,
 adversarial behavior, explainability, and computational scalability. Synthetic
-experiments are used for controlled failure analysis and are explicitly separated from
-planned external-telemetry validation. This manuscript is a work in progress; the
+experiments provide controlled failure analysis; a separate LANL enterprise
+telemetry study reports bounded contextual comparisons rather than full-device
+trust effectiveness. This manuscript is a work in progress; the
 current synthetic results do not establish production effectiveness.
 \end{abstract}
 
@@ -177,6 +178,57 @@ calculation is computationally lightweight in the measured environment. They do 
 establish end-to-end enterprise capacity or latency because collection, normalization,
 data joins, remote services, persistence, enforcement, concurrency, and failures were
 outside the timed region.
+
+
+\section{Bounded External-Telemetry Context Study}
+\subsection{Dataset and Claim Scope}
+We use the de-identified LANL Comprehensive Multi-Source Cyber-Security
+Events dataset, a 58-day enterprise collection with Windows authentication,
+process, DNS, network-flow, and specific red-team authentication events
+\cite{kent2015lanl}. The red-team file identifies selected malicious
+authentication events, not verified benign counterparts for other times.
+LANL does not include managed-device compliance, EDR health, patch state,
+or proprietary risk-assessment labels. Consequently, this section evaluates
+\emph{contextual enterprise telemetry availability and paired activity},
+not the proposed complete device-trust access policy.
+
+\subsection{First-Cohort Observations}
+For the first 25 red-team authentication labels, we formed target-specific
+$\pm600$-second windows around the same user and implicated computers, and
+paired them with fixed-offset non-red-team temporal controls according to
+the frozen repository protocol. Twenty-four of the 25 targets had a
+matched control. The target median process-event count was 37.5 versus
+9.0 for controls; the median paired difference was 21.5, with 21
+target-higher and three control-higher pairs. The median number of distinct
+processes was 13.0 versus 4.5, with median paired difference 7.0
+and 22 target-higher versus two control-higher pairs. These observations
+are descriptive, not a causal attack effect or a full device-trust
+detection metric. The first cohort's short time offsets can yield
+weekday and workload mismatch.
+
+\subsection{Preregistered Second-Cohort Replication}
+Before opening its contextual process, flow or DNS telemetry, the
+second cohort was frozen as original red-team file rows 26--50
+(inclusive). The target entity scope and $\pm600$-second window remain
+unchanged. Candidate matched control offsets are attempted in order
+at $+7,+14,+21,-7,-14,-21$ days, excluding windows that overlap a
+known red-team event or an already selected control. Missing or
+zero-coverage matched controls are not replaced based on outcomes.
+The 13 existing context features are unchanged. The three prespecified
+primary replication features are process-event count, unique process
+count, and process-start count. Each feature will be reported using
+target/control medians, median within-pair differences, directional
+counts including ties, an exact two-sided sign test among non-ties,
+and Wilson 95\% confidence intervals for the target-higher fraction.
+The features are correlated and will not be interpreted as three
+independent discoveries.
+
+\textbf{Replication status at the time of drafting:} The second-cohort
+execution workflow and tests have been committed, but the replication
+outcome is not reported here pending verified workflow artifacts. Even
+a successful replication would not establish a false-positive rate,
+sensitivity, specificity, causal effect, or real-world effectiveness
+of the complete eight-factor access-decision model.
 
 \section{Threats to Validity}
 Synthetic data cannot establish real-world security effectiveness. Construct validity,
