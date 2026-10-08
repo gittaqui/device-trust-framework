@@ -1,0 +1,64 @@
+name: Frozen second-cohort LANL replication
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/lanl-second-cohort-replication.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frozen-lanl-second-cohort
+  cancel-in-progress: false
+
+jobs:
+  replicate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned-range research dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements.txt "huggingface_hub>=0.25,<2"
+      - name: Run complete repository tests before opening replication data
+        env:
+          PYTHONPATH: .:src
+        run: pytest -q
+      - name: Record execution provenance
+        shell: bash
+        run: |
+          mkdir -p results
+          {
+            echo "UTC_DATE=$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+            echo "GIT_SHA=$(git rev-parse HEAD)"
+            echo "PYTHON=$(python --version)"
+          } > results/lanl-2015-replication-environment.txt
+          python -m pip freeze >> results/lanl-2015-replication-environment.txt
+      - name: Lock frozen cohort selection without observing context telemetry
+        run: |
+          python src/run_lanl2015_replication.py --preflight-only
+      - name: Extract 25 paired frozen replication windows
+        timeout-minutes: 65
+        run: |
+          python src/run_lanl2015_replication.py
+      - name: Analyze three preregistered primary process features
+        run: |
+          python src/analyze_lanl2015_replication.py
+      - name: Upload verifiable replication artifacts even when failed
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frozen-lanl-2015-second-cohort
+          retention-days: 30
+          if-no-files-found: warn
+          path: |
+            results/lanl-2015-replication-environment.txt
+            results/lanl-2015-replication-summary.json
+            results/lanl-2015-replication-statistics.json
+            data/external/lanl-2015/replication-control-manifest.json
+            data/external/lanl-2015/replication-paired-features.csv
