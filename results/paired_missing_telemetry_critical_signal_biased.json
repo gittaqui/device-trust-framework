@@ -1,0 +1,114 @@
+{
+  "evidence_type": "synthetic-only",
+  "input_rows": 50000,
+  "nominal_missing_rate": 0.25,
+  "safe_rows": 29033,
+  "scenario_counts": {
+    "adversarial_compliant": 3063,
+    "healthy": 24913,
+    "identity_risk": 3912,
+    "malware": 3473,
+    "mixed_degradation": 3496,
+    "policy_drift": 4120,
+    "protection_missing": 3034,
+    "stale": 3989
+  },
+  "seed": 20260904,
+  "unsafe_rows": 20967,
+  "mask_model": "critical_signal_biased",
+  "observed_missing_fraction": 0.2627325,
+  "strategies": {
+    "confidence": {
+      "decision_counts": {
+        "ALLOW": 8845,
+        "DENY": 22367,
+        "STEP_UP": 18788
+      },
+      "false_allow_count": 215,
+      "false_allow_rate": 0.010254208995087518,
+      "false_deny_count": 7404,
+      "false_deny_rate": 0.25502014948506874,
+      "paired_vs_renormalize": {
+        "different_decisions": 30363,
+        "reference_only_allow": 21582
+      },
+      "safe_allow_count": 8630,
+      "safe_allow_rate": 0.29724795921881997,
+      "safe_step_up_count": 12999,
+      "safe_step_up_rate": 0.4477318912961113
+    },
+    "neutral": {
+      "decision_counts": {
+        "ALLOW": 21370,
+        "DENY": 7057,
+        "STEP_UP": 21573
+      },
+      "false_allow_count": 1080,
+      "false_allow_rate": 0.051509514952067535,
+      "false_deny_count": 164,
+      "false_deny_rate": 0.00564874453208418,
+      "paired_vs_renormalize": {
+        "different_decisions": 9877,
+        "reference_only_allow": 9057
+      },
+      "safe_allow_count": 20290,
+      "safe_allow_rate": 0.6988599180243171,
+      "safe_step_up_count": 8579,
+      "safe_step_up_rate": 0.2954913374435987
+    },
+    "pessimistic": {
+      "decision_counts": {
+        "ALLOW": 8845,
+        "DENY": 22367,
+        "STEP_UP": 18788
+      },
+      "false_allow_count": 215,
+      "false_allow_rate": 0.010254208995087518,
+      "false_deny_count": 7404,
+      "false_deny_rate": 0.25502014948506874,
+      "paired_vs_renormalize": {
+        "different_decisions": 30363,
+        "reference_only_allow": 21582
+      },
+      "safe_allow_count": 8630,
+      "safe_allow_rate": 0.29724795921881997,
+      "safe_step_up_count": 12999,
+      "safe_step_up_rate": 0.4477318912961113
+    },
+    "renormalize": {
+      "decision_counts": {
+        "ALLOW": 30427,
+        "DENY": 6228,
+        "STEP_UP": 13345
+      },
+      "false_allow_count": 4263,
+      "false_allow_rate": 0.2033195020746888,
+      "false_deny_count": 53,
+      "false_deny_rate": 0.0018255089036613508,
+      "paired_vs_renormalize": {},
+      "safe_allow_count": 26164,
+      "safe_allow_rate": 0.9011814142527469,
+      "safe_step_up_count": 2816,
+      "safe_step_up_rate": 0.09699307684359178
+    },
+    "step_up": {
+      "decision_counts": {
+        "ALLOW": 7117,
+        "DENY": 4062,
+        "STEP_UP": 38821
+      },
+      "false_allow_count": 903,
+      "false_allow_rate": 0.043067677779367576,
+      "false_deny_count": 0,
+      "false_deny_rate": 0,
+      "paired_vs_renormalize": {
+        "different_decisions": 25476,
+        "reference_only_allow": 23310
+      },
+      "safe_allow_count": 6214,
+      "safe_allow_rate": 0.2140323080632384,
+      "safe_step_up_count": 22819,
+      "safe_step_up_rate": 0.7859676919367616
+    }
+  }
+}
