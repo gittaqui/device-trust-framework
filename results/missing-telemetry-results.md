@@ -1,3 +1,5 @@
+> **Methodological correction (2026-10-23):** This historical exploratory table used strategy-specific random masks, so policy columns are not strictly paired. Its `confidence` and `pessimistic` strategies are algebraically equivalent. For corrected common-mask comparisons and auditable counts, see [`missing-telemetry-paired-audit-2026-10-23.md`](missing-telemetry-paired-audit-2026-10-23.md). These are synthetic-only findings.
+
 # Missing-Telemetry Results — 2026-09-04
 
 **Synthetic experiment only. These results do not demonstrate production effectiveness.**
