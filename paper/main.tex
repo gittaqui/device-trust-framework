@@ -152,6 +152,41 @@ The quorum result is therefore evidence of a useful alternative non-compensatory
 structure, not evidence that this setting is optimal or externally superior.
 Accordingly, no production policy recommendation is made from these results.
 
+\subsection{Paired Missing-Telemetry Sensitivity}
+To avoid confounding policy comparisons with independently sampled missingness
+masks, we reevaluated the same 50,000 synthetic observations under a common
+mask for every policy within each missingness regime. The generator seed was
+20260903, the mask seed was 20260904, and nominal missingness was 25\%.
+There were 29,033 synthetic safe and 20,967 synthetic unsafe observations.
+Realized masked-cell fractions were 24.89\% for missing completely at random
+(MCAR) and 26.27\% for a stylized critical-signal-biased outage.
+Masks are paired \emph{across policies within a regime}, not across regimes.
+The biased outage is not a validated empirical MNAR mechanism; prior work
+motivates examining nonrandom missingness explicitly
+\cite{pereira2024mnar}.
+
+\input{paired-missingness-table.tex}
+
+Table~\ref{tab:paired-missingness} reports ordinary ALLOW among synthetic
+unsafe observations and STEP\_UP or DENY among synthetic safe observations,
+with the corresponding label-specific denominators. Only four distinct
+decision rules are shown. The implementation's confidence-adjusted
+score equals its pessimistic observed-weight sum algebraically when
+observed weight is positive; their zero-observation and critical-gate
+decision branches also coincide. Treating them as independent baselines
+would overstate methodological diversity.
+
+In the critical-signal-biased regime, renormalization allowed 20.33\%
+of synthetic unsafe observations. Pessimistic scoring reduced this to
+1.03\% but denied 25.50\% of safe observations. Explicit STEP\_UP
+allowed 4.31\% of unsafe observations while escalating 78.60\% of safe
+observations. These are descriptive security--friction trade-offs under
+the specified generator, not production effectiveness or calibrated
+uncertainty estimates. Pairing removes one avoidable sampling confound,
+but does not establish label validity, realistic outage frequencies, or
+generalization to enterprise devices. Earlier strategy-specific-mask
+results remain archived as unpaired exploratory output.
+
 \subsection{Core Computation Scalability}
 A seven-repetition microbenchmark was run after 20,000 warm-up decisions on Python
 3.13.5 in a Linux x86-64 execution environment. Table~\ref{tab:scale} reports the
