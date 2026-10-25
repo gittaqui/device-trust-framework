@@ -165,7 +165,11 @@ The biased outage is not a validated empirical MNAR mechanism; prior work
 motivates examining nonrandom missingness explicitly
 \cite{pereira2024mnar}.
 
-\input{paired-missingness-table.tex}
+\IfFileExists{paired-missingness-table.tex}{%
+  \input{paired-missingness-table.tex}%
+}{%
+  \input{paper/paired-missingness-table.tex}%
+}
 
 Table~\ref{tab:paired-missingness} reports ordinary ALLOW among synthetic
 unsafe observations and STEP\_UP or DENY among synthetic safe observations,
