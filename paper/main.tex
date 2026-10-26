@@ -255,19 +255,24 @@ known red-team event or an already selected control. Missing or
 zero-coverage matched controls are not replaced based on outcomes.
 The 13 existing context features are unchanged. The three prespecified
 primary replication features are process-event count, unique process
-count, and process-start count. Each feature will be reported using
+count, and process-start count. For each feature, we report
 target/control medians, median within-pair differences, directional
-counts including ties, an exact two-sided sign test among non-ties,
-and Wilson 95\% confidence intervals for the target-higher fraction.
-The features are correlated and will not be interpreted as three
-independent discoveries.
+counts including ties, and logical bounds for unmatched controls.
+Because repeated users, source hosts, and overlapping windows induce
+dependence, pair-level sign-test and Wilson-interval calculations are
+not treated as calibrated population inference. The three features
+are correlated and are not independent discoveries.
 
-\textbf{Replication status at the time of drafting:} The second-cohort
-execution workflow and tests have been committed, but the replication
-outcome is not reported here pending verified workflow artifacts. Even
-a successful replication would not establish a false-positive rate,
-sensitivity, specificity, causal effect, or real-world effectiveness
-of the complete eight-factor access-decision model.
+\IfFileExists{lanl-second-cohort-auto.tex}{%
+  \input{lanl-second-cohort-auto.tex}%
+}{%
+  \input{paper/lanl-second-cohort-auto.tex}%
+}
+\IfFileExists{lanl-group-influence.tex}{%
+  \input{lanl-group-influence.tex}%
+}{%
+  \input{paper/lanl-group-influence.tex}%
+}
 
 \section{Threats to Validity}
 Synthetic data cannot establish real-world security effectiveness. Construct validity,
