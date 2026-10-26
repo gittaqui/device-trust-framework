@@ -1,0 +1,39 @@
+% Post-hoc, descriptive leave-one-group-out audit; public LANL frozen cohort.
+% Paired CSV SHA-256: 6dfe2e18ed65d2f54d6a73ce5cb8b9848b0ecdf78e3fd36bbf469a52396f14db
+% Manifest SHA-256: 190190ac1b75495fdfb18422da8b727bdac88553852edba8d236fb3d544957ff
+\subsection{Post-hoc Dependence and Influence Sensitivity}
+We audited whether the matched-pair directional comparison is driven
+by a single repeated user, source host, or overlapping-window episode.
+For each grouping, we removed one group at a time and recomputed the
+fraction of remaining matched pairs in which the red-team target's
+process count exceeded its unlabeled temporal control. The user groups
+contained 1, 4, 5, and 8 matched pairs; the two source-host groups
+contained 4 and 14. Thirteen episodes were formed by joining
+consecutive target times separated by at most 1,200 seconds, without
+claiming that these episodes represent independent attacks.
+
+\begin{table}[ht]
+\centering
+\caption{Leave-one-group-out directional fraction ranges, frozen LANL cohort (post-hoc; 18 originally matched pairs).}
+\label{tab:lanl-group-influence}
+\begin{tabular}{lrrr}
+\toprule
+Feature & User & Source host & Episode \\
+\midrule
+Process events & 85.7--92.3\% & 85.7--100\% & 87.5--94.1\% \\
+Unique processes & 92.3--100\% & 92.9--100\% & 93.3--100\% \\
+Process starts & 85.7--92.3\% & 85.7--100\% & 87.5--94.1\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+These fractions have changing denominators: leaving out the larger
+source-host group retains only four matched pairs, making its 100\%
+value particularly unstable. The ranges are \emph{descriptive
+influence diagnostics}, not confidence intervals or evidence of
+independent replication. All groups originate from the same selected
+cohort; seven additional targets remain unmatched, and no temporal
+control is verified benign. Standard independent-pair inference is
+inappropriate with this degree of repeated-entity dependence
+\cite{cameron2015cluster}. This analysis does not validate device
+compliance, access-decision outcomes, or the eight-factor trust model.
