@@ -154,8 +154,8 @@ def render_tex(result: dict) -> str:
         r"\subsection{Frozen Second-Cohort Observations and Missing-Control Sensitivity}",
         "The preregistered LANL second cohort (original red-team rows 26--50)",
         f"contains {result['total_targets']} targets, of which {result['matched']} have eligible temporal controls and",
-        f"{result['unmatched']} remain unmatched. Controls are \emph{{unlabeled}}, not verified benign.",
-        "Table~\ref{tab:lanl-second-frozen} summarizes three prespecified process",
+        f"{result['unmatched']} remain unmatched. Controls are \\emph{{unlabeled}}, not verified benign.",
+        "Table~\\ref{tab:lanl-second-frozen} summarizes three prespecified process",
         "features. The median of within-pair differences need not equal the",
         "difference between target and control marginal medians.",
         r"\begin{table}[ht]", r"\centering",
@@ -169,7 +169,7 @@ def render_tex(result: dict) -> str:
         item = result["features"][feature]
         medians = f"{_fmt(item['target_median'])}/{_fmt(item['control_median'])}"
         bounds = f"[{item['bound_lower']:.2f},{item['bound_upper']:.2f}]"
-        lines.append(f"{item['label']} & {medians} & {_fmt(item['median_paired_difference'])} & {item['higher']}/{result['matched']} & {bounds} \\")
+        lines.append(f"{item['label']} & {medians} & {_fmt(item['median_paired_difference'])} & {item['higher']}/{result['matched']} & {bounds} \\\\")
     lines.extend([
         r"\bottomrule", r"\end{tabular}", r"\end{table}",
         "The bounds apply only to the 25 selected targets: unmatched controls",
