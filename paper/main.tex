@@ -191,6 +191,36 @@ but does not establish label validity, realistic outage frequencies, or
 generalization to enterprise devices. Earlier strategy-specific-mask
 results remain archived as unpaired exploratory output.
 
+\subsection{Operational Coverage of Missing-Evidence Policies}
+The paired-mask results above describe class-conditional error and friction, but
+do not alone reveal the fraction of sessions receiving ordinary access. For
+each fixed policy, we additionally report ALLOW divided by all observations,
+unsafe observations divided by ALLOW decisions, and safe observations
+receiving STEP\_UP or DENY divided by all safe observations. The second
+quantity is sensitive to the synthetic unsafe-class prevalence and must not
+be confused with unsafe ALLOW divided by all unsafe observations.
+Reject-option research motivates explicit coverage and rejection-cost
+accounting \cite{franc2023reject}; however, STEP\_UP is a potentially
+resolvable authentication deferral, not an observed final denial, and DENY
+is itself a decision. Thus ordinary-ALLOW coverage is not a conventional
+selective classifier's total decision coverage.
+
+\IfFileExists{missingness-operational-coverage.tex}{%
+  \input{missingness-operational-coverage.tex}%
+}{%
+  \input{paper/missingness-operational-coverage.tex}%
+}
+
+Table~\ref{tab:missingness-operational-coverage} shows descriptive
+fixed-policy operating points on the same synthetic observations. Under
+the critical-signal-biased mask, renormalization allowed 60.85\% of all
+observations, versus 17.69\% under pessimistic scoring; safe-session
+friction rose from 9.88\% to 70.28\%. Among ordinary ALLOW decisions,
+14.01\% versus 2.43\% were labeled unsafe, respectively. These
+conditional compositions are not calibrated security probabilities.
+The analysis is post-hoc, not a threshold-swept risk--coverage curve,
+and cannot establish policy optimality or real-world access utility.
+
 \subsection{Core Computation Scalability}
 A seven-repetition microbenchmark was run after 20,000 warm-up decisions on Python
 3.13.5 in a Linux x86-64 execution environment. Table~\ref{tab:scale} reports the
