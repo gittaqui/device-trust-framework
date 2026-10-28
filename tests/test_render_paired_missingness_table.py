@@ -74,5 +74,30 @@ class TestPairedMissingnessTable(unittest.TestCase):
                 module.render(Path(temp))
 
 
+    def test_operational_coverage_matches_committed_table(self):
+        self.assertEqual(module.render_operational(ROOT / "results"),
+                         (ROOT / "paper" / "missingness-operational-coverage.tex").read_text())
+
+    def test_operational_coverage_rejects_corrupt_safe_partition(self):
+        with tempfile.TemporaryDirectory() as temp:
+            for key, _, filename in module.SOURCES:
+                fixture = json.loads((ROOT / "results" / filename).read_text())
+                if key == "mcar":
+                    fixture["strategies"]["neutral"]["safe_allow_count"] += 1
+                (Path(temp) / filename).write_text(json.dumps(fixture))
+            with self.assertRaisesRegex(ValueError, "label-conditioned"):
+                module.render_operational(Path(temp))
+
+    def test_operational_coverage_rejects_incorrect_safe_allow_rate(self):
+        with tempfile.TemporaryDirectory() as temp:
+            for key, _, filename in module.SOURCES:
+                fixture = json.loads((ROOT / "results" / filename).read_text())
+                if key == "mcar":
+                    fixture["strategies"]["neutral"]["safe_allow_rate"] = 0.0
+                (Path(temp) / filename).write_text(json.dumps(fixture))
+            with self.assertRaisesRegex(ValueError, "safe-ALLOW"):
+                module.render_operational(Path(temp))
+
+
 if __name__ == "__main__":
     unittest.main()
