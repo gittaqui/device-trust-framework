@@ -99,5 +99,15 @@ class TestPairedMissingnessTable(unittest.TestCase):
                 module.render_operational(Path(temp))
 
 
+    def test_operational_coverage_rejects_population_mismatch(self):
+        with tempfile.TemporaryDirectory() as temp:
+            for key, _, filename in module.SOURCES:
+                fixture = json.loads((ROOT / "results" / filename).read_text())
+                if key == "critical_signal_biased":
+                    fixture["scenario_counts"]["healthy"] += 1
+                (Path(temp) / filename).write_text(json.dumps(fixture))
+            with self.assertRaisesRegex(ValueError, "same synthetic source population"):
+                module.render_operational(Path(temp))
+
 if __name__ == "__main__":
     unittest.main()
