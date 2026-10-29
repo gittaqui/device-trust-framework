@@ -60,14 +60,18 @@ def decide_partial(
     if strategy not in STRATEGY_IDS:
         raise ValueError(f"Unknown strategy: {strategy}")
 
-    # Apply hard gates only when the underlying signal is actually observed.
-    if signals.get("threat_risk", -1.0) >= 0.90:
-        return 0.0, "DENY", 1.0
-    if "security_coverage" in signals and signals["security_coverage"] <= 0.15:
-        return 0.0, "DENY", 1.0
-
+    # Coverage measures available telemetry, not the certainty of the decision.
+    # Calculate it before early-return safety gates so a partial observation that
+    # triggers DENY cannot be incorrectly reported as 100% observed.
     factors = _factor_values(signals)
     observed_weight = sum(DEFAULT_WEIGHTS[name] for name in factors)
+
+    # Apply hard gates only when the underlying signal is actually observed.
+    if signals.get("threat_risk", -1.0) >= 0.90:
+        return 0.0, "DENY", observed_weight
+    if "security_coverage" in signals and signals["security_coverage"] <= 0.15:
+        return 0.0, "DENY", observed_weight
+
     if observed_weight <= 0:
         return 0.0, "STEP_UP", 0.0
 
