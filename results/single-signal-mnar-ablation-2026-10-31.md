@@ -68,3 +68,4 @@ The baseline MCAR and all-eight arms were cross-checked against the October 30 f
 The mask mechanism depends on each potentially unobserved value, a stipulated MNAR-by-construction selection mechanism; its probability is calibrated using the complete synthetic sample. Real telemetry outages could be correlated across signals and devices, and missingness mechanisms cannot generally be identified from observed data alone without assumptions. No tenant measurements, independent safety labels, model calibration, confidence intervals, or significance claims are available. Three mask seeds are not independent populations.
 
 Next: run a held-out, independently adjudicated non-production device evaluation and predefine acceptable false-ALLOW/friction costs; investigate correlated outages and sensitivity to the assumed dropout model.
+
