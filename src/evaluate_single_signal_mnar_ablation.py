@@ -197,8 +197,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     result = evaluate(args.input, rate=args.rate, beta=args.beta, seeds=tuple(args.seeds))
-    output = json.dumps(result, indent=2, sort_keys=True) + "
-"
+    output = json.dumps(result, indent=2, sort_keys=True) + "\n"
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(output, encoding="utf-8")
