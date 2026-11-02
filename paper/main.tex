@@ -304,6 +304,12 @@ are correlated and are not independent discoveries.
   \input{paper/lanl-group-influence.tex}%
 }
 
+\IfFileExists{correlated-missingness.tex}{%
+  \input{correlated-missingness.tex}%
+}{%
+  \input{paper/correlated-missingness.tex}%
+}
+
 \section{Threats to Validity}
 Synthetic data cannot establish real-world security effectiveness. Construct validity,
 distribution assumptions, scenario prevalence, threshold subjectivity, and domain
