@@ -1,0 +1,35 @@
+\subsection{Correlated Telemetry Unavailability (Synthetic Stress Test)}
+The previous value-dependent masking study assumes conditionally independent
+signal-missingness indicators. We separately stress-test \emph{correlation
+between} missingness indicators while holding each signal's expected dropout
+probability at 0.25 and making masking independent of signal values. Four
+paired regimes range from independent loss to common-mode loss of five
+endpoint-related signals and finally all eight signals. The endpoint grouping
+and correlation are stipulated, not estimated from enterprise data. Table~\ref{tab:correlated-outage}
+reports ordinary-ALLOW rates among scenario-labeled unsafe observations.
+\begin{table}[t]
+\centering
+\caption{Unsafe ordinary ALLOW (\%), synthetic correlated missingness;
+three mask seeds on 50,000 fixed generated observations.}
+\label{tab:correlated-outage}
+\begin{tabular}{lrrrr}
+\toprule
+Mask regime & Renorm. & Neutral & Pessim. & Step-up \\
+\midrule
+Independent & 17.47 & 4.54 & 1.46 & 6.07 \\
+Endpoint shared 50\% & 20.13 & 5.78 & 2.82 & 7.67 \\
+Endpoint shared 100\% & 22.63 & 7.13 & 4.09 & 9.43 \\
+All shared 100\% & 9.34 & 9.34 & 9.34 & 9.34 \\
+\bottomrule
+\end{tabular}
+\end{table}
+The endpoint-shared 100\% regime increased pessimistic unsafe ALLOW from
+1.46\% to 4.09\%, despite similar marginal dropout. Under all-signal
+common-mode loss, observations are either complete or wholly missing; all
+four policies consequently agree, but 25.125\% of rows have no telemetry
+and are escalated. The nonmonotone renormalization response underscores that
+marginal missingness rates do not determine decision risk. Safe-user DENY
+and STEP\_UP rates are reported separately in the reproducibility artifact.
+These generator-defined outcomes do not estimate real-world policy accuracy.
+Sensor-network literature describes correlated observations and downtime
+\cite{dinwoodie2019sensor}; it does not establish an endpoint outage model.
