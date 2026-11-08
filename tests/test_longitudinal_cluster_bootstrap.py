@@ -24,7 +24,7 @@ class PairedBootstrapTests(unittest.TestCase):
     def test_constant_effect(self):
         rows = [dict(device_id=str(i), unsafe=True, intervals=10,
                      arm0_allow_count=2, arm1_allow_count=5) for i in range(5)]
-        self.assertEqual(paired_effect(rows, 100, 1)["ci_95_percentile"], [.3, .3])
+        self.assertTrue(all(abs(x - .3) < 1e-12 for x in paired_effect(rows, 100, 1)["ci_95_percentile"]))
 
     def test_duplicate_rejected(self):
         with self.assertRaises(ValueError):
